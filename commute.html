@@ -16,28 +16,30 @@
 <style>
   :root { --red: #d61d1d; --ink: #333; --sub: #666; --line: #ccc; }
   * { box-sizing: border-box; }
-  /* ⚠ 埋め込みの高さは固定（add_commute_widget.js の HEIGHT）。強調文（ファーストビュー）に置くので背を低く詰めてある。
-       幅320px（パソコンの右の欄）と356px（スマホ）で、最初・結果・候補ありのどれもが枠に収まり、下が空きすぎないか測ってから変えること
-     ⚠ 背景は付けない（透明）。建物ページの灰色の欄（#eee）がそのまま見える。左右の余白も無しにして、上の行と頭を揃える */
+  /* ⚠⚠ 埋め込みの高さは固定（add_commute_widget.js の HEIGHT＝134px）。iframe は中身に合わせて伸ばせないので、
+       【検索前も結果も同じ高さ】になるよう、各段の高さをピクセルで決めてある（和田さん「下の余白は結果を出すまで無しに」）:
+         見出し20 ＋ 5 ＋ 検索バー36 ＋ 6 ＋ 結果の欄48（案内文2行／行き先＋距離の2行／見つからない時の2行）＋ 4 ＋ 出典15 ＝ 134
+       字の大きさや文言を変えたら、幅320px（パソコンの右の欄）と356px（スマホ）で、案内文・結果が2行に収まるか確かめること
+     ⚠ 背景は付けない（透明）。外側の余白も無し。建物ページの灰色の欄（#eee）に、上の行と頭を揃えて置く */
   html, body { background: transparent; }
-  body { margin: 0; padding: 2px 0; font: 14px/1.5 -apple-system, "Hiragino Sans", "Yu Gothic UI", Meiryo, sans-serif; color: var(--ink); }
-  h1 { font-size: 13px; margin: 0 0 5px; color: var(--red); letter-spacing: .03em; }
-  form { display: flex; gap: 6px; }
-  input[type=text] { flex: 1; min-width: 0; padding: 7px 10px; border: 1px solid var(--line); border-radius: 6px; font-size: 16px; background: #fff; color: var(--ink); }
-  button { padding: 7px 14px; border: 0; border-radius: 6px; background: var(--red); color: #fff; font-weight: 700; font-size: 14px; cursor: pointer; white-space: nowrap; }
+  body { margin: 0; padding: 0; font: 14px/1.5 -apple-system, "Hiragino Sans", "Yu Gothic UI", Meiryo, sans-serif; color: var(--ink); overflow: hidden; }
+  h1 { font-size: 13px; line-height: 20px; height: 20px; margin: 0 0 5px; color: var(--red); letter-spacing: .03em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  form { display: flex; gap: 6px; height: 36px; }
+  input[type=text] { flex: 1; min-width: 0; height: 36px; padding: 0 10px; border: 1px solid var(--line); border-radius: 6px; font-size: 16px; background: #fff; color: var(--ink); }
+  button { height: 36px; padding: 0 14px; border: 0; border-radius: 6px; background: var(--red); color: #fff; font-weight: 700; font-size: 14px; cursor: pointer; white-space: nowrap; }
   button:disabled { opacity: .5; }
-  .help { margin: 5px 0 0; font-size: 12px; color: var(--sub); line-height: 1.5; }
-  .msg { margin: 5px 0 0; font-size: 12px; color: var(--sub); line-height: 1.5; }
-  .result { margin-top: 5px; }
-  .to { font-size: 12px; color: var(--sub); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .to select { max-width: calc(100% - 3em); font-size: 12px; color: var(--ink); padding: 1px 2px; border: 1px solid var(--line); border-radius: 4px; background: #fff; }
-  .row { display: flex; align-items: center; flex-wrap: wrap; gap: 2px 8px; }
-  .km { font-size: 20px; font-weight: 700; line-height: 1.35; white-space: nowrap; }
-  .km small { font-size: 11px; font-weight: 400; color: var(--sub); margin-left: 4px; }
-  .links { display: flex; gap: 6px; }
-  .links a { display: inline-block; padding: 3px 9px; border-radius: 999px; border: 1px solid var(--red); color: var(--red); background: #fff; text-decoration: none; font-size: 12px; font-weight: 700; white-space: nowrap; }
-  .note { font-size: 10.5px; color: var(--sub); margin: 2px 0 0; line-height: 1.45; }
-  .credit { font-size: 10px; color: #999; margin: 4px 0 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #out { height: 48px; margin-top: 6px; overflow: hidden; }
+  .help, .msg { margin: 0; font-size: 12px; line-height: 18px; color: var(--sub); }
+  /* 結果は1行: 左に行き先と距離、右に押しやすいボタン2つ（高さ40px・スマホで指で押せる大きさ） */
+  .res { display: flex; align-items: center; gap: 6px; height: 44px; }
+  .dest { flex: 1; min-width: 0; display: block; text-align: left; padding: 0; margin: 0; border: 0; background: none; color: var(--ink); font: inherit; }
+  button.dest { cursor: pointer; }
+  .to { display: block; font-size: 11px; line-height: 16px; color: var(--sub); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .km { display: block; font-size: 20px; line-height: 26px; font-weight: 700; white-space: nowrap; }
+  .km small { font-size: 11px; font-weight: 400; color: var(--sub); margin-left: 3px; }
+  .btn { flex: none; display: inline-flex; align-items: center; justify-content: center; height: 40px; padding: 0 10px; border: 1px solid var(--red); border-radius: 8px; background: #fff; color: var(--red); font-size: 12px; font-weight: 700; text-decoration: none; white-space: nowrap; }
+  .btn:active { background: #fdecec; }
+  .credit { margin: 4px 0 0; font-size: 10px; line-height: 15px; height: 15px; color: #999; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .credit a { color: #999; }
 </style>
 </head>
@@ -47,7 +49,7 @@
   <input type="text" id="q" placeholder="会社の住所かビル名" autocomplete="off" aria-label="会社の住所かビル名">
   <button id="go" type="submit">調べる</button>
 </form>
-<div id="out"><p class="help">会社の住所（例：渋谷区渋谷2-24-12）かビル名（例：六本木ヒルズ）を入れると、この物件からの直線距離と電車での行き方が分かります。家賃補助の「半径◯km以内」の確認にも。</p></div>
+<div id="out"><p class="help">会社の住所かビル名で、直線距離と電車での行き方が分かります。家賃補助の確認にも。</p></div>
 <p class="credit">位置の検索：<a href="https://maps.gsi.go.jp/" target="_blank" rel="noopener">国土地理院</a>・<a href="https://openpoiapi.com/attribution.html" target="_blank" rel="noopener">OpenPOI API</a></p>
 
 <script>
@@ -76,12 +78,43 @@
   };
   const fmt = m => m < 1000 ? `約${Math.round(m / 10) * 10}m` : `約${(m / 1000).toFixed(2)}km`;
 
-  async function gsi(q) {
+  // 首都圏の範囲（駅の結果には都県名が付かないので、位置で絞る）
+  const IN_AREA = p => p.lat > 34.8 && p.lat < 36.6 && p.lng > 138.6 && p.lng < 140.95;
+  async function gsiRaw(q) {
     const r = await fetch('https://msearch.gsi.go.jp/address-search/AddressSearch?q=' + encodeURIComponent(q));
     if (!r.ok) throw new Error('住所検索に失敗しました');
-    return (await r.json())
-      .filter(x => AREA.test(x.properties.title))
-      .map(x => ({ label: short(x.properties.title), lat: x.geometry.coordinates[1], lng: x.geometry.coordinates[0] }));
+    return (await r.json()).map(x => ({ title: x.properties.title, lat: x.geometry.coordinates[1], lng: x.geometry.coordinates[0] }));
+  }
+  async function gsi(q) {
+    return (await gsiRaw(q)).filter(x => AREA.test(x.title)).map(x => ({ label: short(x.title), lat: x.lat, lng: x.lng }));
+  }
+  // 近い候補（既定400m以内）は1つにまとめる（同じ駅の線ごとの点・同じビルの別の区画など）。先に出た方の名前を使い、位置は平均
+  const clusters = (pts, r = 400) => {
+    const out = [];
+    for (const p of pts) {
+      const c = out.find(x => dist(x, p) < r);
+      if (c) { c.n++; c.lat += (p.lat - c.lat) / c.n; c.lng += (p.lng - c.lng) / c.n; }
+      else out.push({ label: p.label, lat: p.lat, lng: p.lng, n: 1 });
+    }
+    return out;
+  };
+  // 駅: 国土地理院は駅名を「新橋駅」の形で返す（大きい駅は線ごとに数点）。名前がぴったり一致する点だけを使う。
+  //   ⚠ これを住所の絞り込み（都県名で始まる）に通すと駅が全部落ち、近くのお店の住所が出てしまう（「新橋駅」→新橋一丁目・2026-10-03）
+  async function station(q) {
+    const name = /駅$/.test(q) ? q : q + '駅';
+    // 大きい駅は線ごとの点が数百m散らばる（大手町駅は4点で約600m・東京駅は約650m）ので、駅は1kmでまとめる。
+    // 蔵前（浅草線と大江戸線・約290m）のように別の駅として離れているものも1つになる（中心から測る）
+    const cs = clusters((await gsiRaw(name)).filter(x => x.title === name && IN_AREA(x)).map(x => ({ label: name, lat: x.lat, lng: x.lng })), 1000);
+    if (cs.length < 2) return cs;
+    // 同じ名前の駅が離れた所にもある時だけ、町名を付けて見分けられるようにする
+    for (const c of cs) {
+      try {
+        const r = await fetch(`https://mreversegeocoder.gsi.go.jp/reverse-geocoder/LonLatToAddress?lat=${c.lat}&lon=${c.lng}`);
+        const town = (((await r.json()) || {}).results || {}).lv01Nm;
+        if (town) c.label = `${name}（${town}）`;
+      } catch (e) { /* 町名が取れなくても候補は出す */ }
+    }
+    return cs;
   }
   async function poi(q) {
     const r = await fetch('https://api.openpoiapi.com/v1/search?q=' + encodeURIComponent(q) + '&center=139.75,35.68&radius=60000&limit=30');
@@ -94,14 +127,15 @@
     return AREA.test(s) && /\d/.test(s) ? s : '';
   };
   const looksLikeAddress = s => /\d/.test(half(s)) && /(区|市|町|村|丁目|番|号|-)/.test(half(s));
-  // 50m以内の重複を1つにまとめる
-  const dedupe = list => list.filter((c, i) => !list.slice(0, i).some(d => dist(c, d) < 50));
 
   async function findPlaces(q) {
     if (looksLikeAddress(q)) {
-      const g = await gsi(q);
-      if (g.length) return g.slice(0, 3);   // 候補は3件まで（枠の高さに収める）
+      const g = clusters(await gsi(q));
+      if (g.length) return g.slice(0, 3);
     }
+    // 駅名（「駅」が無くても、同じ名前の駅があれば駅として扱う。「新橋」→新橋駅）
+    const st = await station(q);
+    if (st.length) return st.slice(0, 3);
     // ビル名・施設名: OpenPOIで住所を取り、その住所を国土地理院の検索で位置にする（施設データの位置はずれていることがあるため）
     const k = key(q);
     const hits = (await poi(q)).filter(x => key(x.name).includes(k) || key(x.address).includes(k));
@@ -112,7 +146,7 @@
       // 名前は入力欄に残っているので、ここは住所だけ（1行に収める）
       if (g.length) cands.push({ label: g[0].label, lat: g[0].lat, lng: g[0].lng });
     }
-    cands = dedupe(cands);
+    cands = clusters(cands);
     if (cands.length) return cands.slice(0, 3);
     // 住所が無い施設だけ当たった時: 施設データの位置のうち一番まとまっている所を使う
     const pts = hits.filter(x => isFinite(x.lat) && isFinite(x.lng));
@@ -125,30 +159,30 @@
       const lat = best.reduce((s, o) => s + o.lat, 0) / best.length, lng = best.reduce((s, o) => s + o.lng, 0) / best.length;
       return [{ label: '施設データの位置（目安）', lat, lng }];
     }
-    // 駅名・地名など
-    return (await gsi(q)).slice(0, 3);
+    // 地名など
+    return clusters(await gsi(q)).slice(0, 3);
   }
 
-  // 結果は1つの形だけ（枠の高さを決めやすくするため）。候補が複数なら1件目を出し、行き先の行を選択欄にして切り替えてもらう
+  // 結果は1つの形だけ（枠の高さを変えられないため）: 左に「行き先まで／約◯km 直線」、右にボタン2つ。
+  //   離れた所に同じ名前の候補がある時だけ、左の行き先の部分を押すと次の候補に切り替わる（選択欄はスマホで押しにくいのでやめた）
   function show(cands, i = 0) {
     const dest = cands[i];
     const m = dist(ORIGIN, dest);
     const o = `${ORIGIN.lat},${ORIGIN.lng}`, d = `${dest.lat},${dest.lng}`;
     const gm = mode => `https://www.google.com/maps/dir/?api=1&origin=${o}&destination=${d}&travelmode=${mode}`;
-    const to = cands.length > 1
-      ? `<select id="pick" aria-label="行き先の候補">${cands.map((c, j) => `<option value="${j}"${j === i ? ' selected' : ''}>${esc(c.label)}</option>`).join('')}</select> まで`
-      : `${esc(dest.label)} まで`;
+    const multi = cands.length > 1;
+    const tag = multi ? 'button' : 'div';
     out.innerHTML = `
-      <div class="result">
-        <div class="to" title="${esc(dest.label)}">${to}</div>
-        <div class="row">
-          <span class="km">${fmt(m)}<small>直線距離</small></span>
-          <span class="links"><a href="${gm('transit')}" target="_blank" rel="noopener" title="Googleマップが開きます">電車の時間</a><a href="${gm('bicycling')}" target="_blank" rel="noopener" title="Googleマップが開きます">自転車</a></span>
-        </div>
-        <p class="note">※道のりではない直線の距離です。電車・自転車はGoogleマップが開きます。境目に近い時は会社にご確認ください。</p>
+      <div class="res">
+        <${tag} class="dest"${multi ? ' type="button" id="next"' : ''} title="${esc(dest.label)}${multi ? '（押すと次の候補）' : ''}">
+          <span class="to">${multi ? `⇄ 候補${i + 1}/${cands.length} ` : ''}${esc(dest.label)}まで</span>
+          <span class="km">${fmt(m)}<small>直線</small></span>
+        </${tag}>
+        <a class="btn" href="${gm('transit')}" target="_blank" rel="noopener" title="Googleマップが開きます">電車の時間 ↗</a>
+        <a class="btn" href="${gm('bicycling')}" target="_blank" rel="noopener" title="Googleマップが開きます">自転車 ↗</a>
       </div>`;
-    const sel = document.getElementById('pick');
-    if (sel) sel.addEventListener('change', () => show(cands, Number(sel.value)));
+    const nx = document.getElementById('next');
+    if (nx) nx.addEventListener('click', () => show(cands, (i + 1) % cands.length));
   }
 
   $('f').addEventListener('submit', async ev => {
