@@ -16,18 +16,24 @@
 <style>
   :root { --red: #d61d1d; --ink: #333; --sub: #666; --line: #ccc; }
   * { box-sizing: border-box; }
-  /* ⚠⚠ 埋め込みの高さは固定（add_commute_widget.js の HEIGHT＝134px）。iframe は中身に合わせて伸ばせないので、
+  /* ⚠⚠ 埋め込みの高さは固定（add_commute_widget.js の HEIGHT＝138px）。iframe は中身に合わせて伸ばせないので、
        【検索前も結果も同じ高さ】になるよう、各段の高さをピクセルで決めてある（和田さん「下の余白は結果を出すまで無しに」）:
-         見出し20 ＋ 5 ＋ 検索バー36 ＋ 6 ＋ 結果の欄48（案内文2行／行き先＋距離の2行／見つからない時の2行）＋ 4 ＋ 出典15 ＝ 134
+         見出し20 ＋ 5 ＋ 検索バー40 ＋ 6 ＋ 結果の欄48（案内文2行／行き先＋距離の2行／見つからない時の2行）＋ 4 ＋ 出典15 ＝ 138
        字の大きさや文言を変えたら、幅320px（パソコンの右の欄）と356px（スマホ）で、案内文・結果が2行に収まるか確かめること
      ⚠ 背景は付けない（透明）。外側の余白も無し。建物ページの灰色の欄（#eee）に、上の行と頭を揃えて置く */
   html, body { background: transparent; }
   body { margin: 0; padding: 0; font: 14px/1.5 -apple-system, "Hiragino Sans", "Yu Gothic UI", Meiryo, sans-serif; color: var(--ink); overflow: hidden; }
   h1 { font-size: 13px; line-height: 20px; height: 20px; margin: 0 0 5px; color: var(--red); letter-spacing: .03em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  form { display: flex; gap: 6px; height: 36px; }
-  input[type=text] { flex: 1; min-width: 0; height: 36px; padding: 0 10px; border: 1px solid var(--line); border-radius: 6px; font-size: 16px; background: #fff; color: var(--ink); }
-  button { height: 36px; padding: 0 14px; border: 0; border-radius: 6px; background: var(--red); color: #fff; font-weight: 700; font-size: 14px; cursor: pointer; white-space: nowrap; }
-  button:disabled { opacity: .5; }
+  /* 検索バーは入力欄1つだけ（和田さん「このくらいシンプルでいい」）。左の虫眼鏡を押しても、Enter（スマホは「検索」キー）でも調べる。
+     角の丸みはサイトの部品に揃えて4px（ヘッダーの検索欄4px・検索ボタン5px・ほかの枠やカードは0）。高さ40pxは指で押しやすい大きさ */
+  form { position: relative; height: 40px; }
+  input[type=search] { display: block; width: 100%; height: 40px; margin: 0; padding: 0 12px 0 38px; border: 1px solid #c9ced6; border-radius: 4px;
+    background: #fff; color: var(--ink); font: inherit; font-size: 16px; -webkit-appearance: none; appearance: none; box-shadow: 0 1px 2px rgba(24, 33, 46, .06); }
+  input[type=search]::-webkit-search-decoration, input[type=search]::-webkit-search-cancel-button { -webkit-appearance: none; }
+  input[type=search]::placeholder { color: #9aa1ab; }
+  input[type=search]:focus { outline: none; border-color: var(--red); box-shadow: 0 0 0 2px rgba(214, 29, 29, .12); }
+  .icon { position: absolute; left: 0; top: 0; width: 38px; height: 40px; padding: 0; border: 0; background: none; color: #6b7280; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+  .icon:disabled { opacity: .5; cursor: default; }
   #out { height: 48px; margin-top: 6px; overflow: hidden; }
   .help, .msg { margin: 0; font-size: 12px; line-height: 18px; color: var(--sub); }
   /* 結果は1行: 左に行き先と距離、右に押しやすいボタン2つ（高さ40px・スマホで指で押せる大きさ） */
@@ -37,7 +43,7 @@
   .to { display: block; font-size: 11px; line-height: 16px; color: var(--sub); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .km { display: block; font-size: 20px; line-height: 26px; font-weight: 700; white-space: nowrap; }
   .km small { font-size: 11px; font-weight: 400; color: var(--sub); margin-left: 3px; }
-  .btn { flex: none; display: inline-flex; align-items: center; justify-content: center; height: 40px; padding: 0 10px; border: 1px solid var(--red); border-radius: 8px; background: #fff; color: var(--red); font-size: 12px; font-weight: 700; text-decoration: none; white-space: nowrap; }
+  .btn { flex: none; display: inline-flex; align-items: center; justify-content: center; height: 40px; padding: 0 10px; border: 1px solid var(--red); border-radius: 4px; background: #fff; color: var(--red); font-size: 12px; font-weight: 700; text-decoration: none; white-space: nowrap; }
   .btn:active { background: #fdecec; }
   .credit { margin: 4px 0 0; font-size: 10px; line-height: 15px; height: 15px; color: #999; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .credit a { color: #999; }
@@ -45,9 +51,9 @@
 </head>
 <body>
 <h1>この物件から会社・目的地までの距離</h1>
-<form id="f">
-  <input type="text" id="q" placeholder="会社の住所かビル名" autocomplete="off" aria-label="会社の住所かビル名">
-  <button id="go" type="submit">調べる</button>
+<form id="f" role="search">
+  <input type="search" id="q" placeholder="会社の住所・ビル名・駅名" enterkeyhint="search" autocomplete="off" aria-label="会社の住所・ビル名・駅名">
+  <button id="go" class="icon" type="submit" aria-label="調べる"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg></button>
 </form>
 <div id="out"><p class="help">会社の住所かビル名で、直線距離と電車での行き方が分かります。家賃補助の確認にも。</p></div>
 <p class="credit">位置の検索：<a href="https://maps.gsi.go.jp/" target="_blank" rel="noopener">国土地理院</a>・<a href="https://openpoiapi.com/attribution.html" target="_blank" rel="noopener">OpenPOI API</a></p>
