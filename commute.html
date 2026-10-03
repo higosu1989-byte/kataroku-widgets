@@ -14,29 +14,31 @@
 <meta name="robots" content="noindex">
 <title>会社までの距離</title>
 <style>
-  :root { --red: #d61d1d; --ink: #222; --sub: #666; --line: #ddd; --bg: #fff; --soft: #f7f7f7; }
+  :root { --red: #d61d1d; --ink: #333; --sub: #666; --line: #ccc; }
   * { box-sizing: border-box; }
   /* ⚠ 埋め込みの高さは固定（add_commute_widget.js の HEIGHT）。強調文（ファーストビュー）に置くので背を低く詰めてある。
-       幅320px（パソコンの右の欄）と343px（スマホ）で、最初・結果・候補3件のどれもが枠に収まるか測ってから変えること */
-  body { margin: 0; padding: 8px 10px; font: 14px/1.55 -apple-system, "Hiragino Sans", "Yu Gothic UI", Meiryo, sans-serif; color: var(--ink); background: var(--bg); }
-  h1 { font-size: 14px; margin: 0 0 6px; color: var(--red); letter-spacing: .03em; }
+       幅320px（パソコンの右の欄）と356px（スマホ）で、最初・結果・候補ありのどれもが枠に収まり、下が空きすぎないか測ってから変えること
+     ⚠ 背景は付けない（透明）。建物ページの灰色の欄（#eee）がそのまま見える。左右の余白も無しにして、上の行と頭を揃える */
+  html, body { background: transparent; }
+  body { margin: 0; padding: 2px 0; font: 14px/1.5 -apple-system, "Hiragino Sans", "Yu Gothic UI", Meiryo, sans-serif; color: var(--ink); }
+  h1 { font-size: 13px; margin: 0 0 5px; color: var(--red); letter-spacing: .03em; }
   form { display: flex; gap: 6px; }
-  input[type=text] { flex: 1; min-width: 0; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; font-size: 16px; }
-  button { padding: 8px 14px; border: 0; border-radius: 8px; background: var(--red); color: #fff; font-weight: 700; font-size: 14px; cursor: pointer; white-space: nowrap; }
+  input[type=text] { flex: 1; min-width: 0; padding: 7px 10px; border: 1px solid var(--line); border-radius: 6px; font-size: 16px; background: #fff; color: var(--ink); }
+  button { padding: 7px 14px; border: 0; border-radius: 6px; background: var(--red); color: #fff; font-weight: 700; font-size: 14px; cursor: pointer; white-space: nowrap; }
   button:disabled { opacity: .5; }
-  .help { margin: 6px 0 0; font-size: 12px; color: var(--sub); line-height: 1.5; }
-  .msg { margin: 6px 0 0; font-size: 13px; color: var(--sub); }
-  .cands { margin-top: 4px; display: grid; gap: 4px; }
-  .cand { text-align: left; padding: 5px 10px; background: var(--soft); color: var(--ink); font-weight: 400; font-size: 13px; border: 1px solid var(--line); }
-  .result { margin-top: 6px; padding: 6px 10px; border: 1px solid var(--line); border-radius: 10px; background: var(--soft); }
-  .to { font-size: 12px; color: var(--sub); line-height: 1.45; }
-  .km { font-size: 20px; font-weight: 700; margin: 0 0 4px; line-height: 1.3; }
-  .km small { font-size: 12px; font-weight: 400; color: var(--sub); margin-left: 6px; }
-  .links { display: flex; flex-wrap: wrap; gap: 6px; }
-  .links a { display: inline-block; padding: 5px 10px; border-radius: 999px; border: 1px solid var(--red); color: var(--red); text-decoration: none; font-size: 12px; font-weight: 700; background: #fff; }
-  .note { font-size: 11px; color: var(--sub); margin: 4px 0 0; line-height: 1.4; }
-  .credit { font-size: 10px; color: #aaa; margin: 6px 0 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .credit a { color: #aaa; }
+  .help { margin: 5px 0 0; font-size: 12px; color: var(--sub); line-height: 1.5; }
+  .msg { margin: 5px 0 0; font-size: 12px; color: var(--sub); line-height: 1.5; }
+  .result { margin-top: 5px; }
+  .to { font-size: 12px; color: var(--sub); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .to select { max-width: calc(100% - 3em); font-size: 12px; color: var(--ink); padding: 1px 2px; border: 1px solid var(--line); border-radius: 4px; background: #fff; }
+  .row { display: flex; align-items: center; flex-wrap: wrap; gap: 2px 8px; }
+  .km { font-size: 20px; font-weight: 700; line-height: 1.35; white-space: nowrap; }
+  .km small { font-size: 11px; font-weight: 400; color: var(--sub); margin-left: 4px; }
+  .links { display: flex; gap: 6px; }
+  .links a { display: inline-block; padding: 3px 9px; border-radius: 999px; border: 1px solid var(--red); color: var(--red); background: #fff; text-decoration: none; font-size: 12px; font-weight: 700; white-space: nowrap; }
+  .note { font-size: 10.5px; color: var(--sub); margin: 2px 0 0; line-height: 1.45; }
+  .credit { font-size: 10px; color: #999; margin: 4px 0 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .credit a { color: #999; }
 </style>
 </head>
 <body>
@@ -45,7 +47,7 @@
   <input type="text" id="q" placeholder="会社の住所かビル名" autocomplete="off" aria-label="会社の住所かビル名">
   <button id="go" type="submit">調べる</button>
 </form>
-<div id="out"><p class="help">会社の住所かビル名を入れると、直線距離と電車での行き方が分かります。家賃補助の「半径◯km以内」の確認にも。</p></div>
+<div id="out"><p class="help">会社の住所（例：渋谷区渋谷2-24-12）かビル名（例：六本木ヒルズ）を入れると、この物件からの直線距離と電車での行き方が分かります。家賃補助の「半径◯km以内」の確認にも。</p></div>
 <p class="credit">位置の検索：<a href="https://maps.gsi.go.jp/" target="_blank" rel="noopener">国土地理院</a>・<a href="https://openpoiapi.com/attribution.html" target="_blank" rel="noopener">OpenPOI API</a></p>
 
 <script>
@@ -107,7 +109,8 @@
     let cands = [];
     for (const h of heads) {
       const g = await gsi(h);
-      if (g.length) cands.push({ label: `${q}（${g[0].label}）`, lat: g[0].lat, lng: g[0].lng });
+      // 名前は入力欄に残っているので、ここは住所だけ（1行に収める）
+      if (g.length) cands.push({ label: g[0].label, lat: g[0].lat, lng: g[0].lng });
     }
     cands = dedupe(cands);
     if (cands.length) return cands.slice(0, 3);
@@ -120,26 +123,32 @@
         if (!best || near.length > best.length) best = near;
       }
       const lat = best.reduce((s, o) => s + o.lat, 0) / best.length, lng = best.reduce((s, o) => s + o.lng, 0) / best.length;
-      return [{ label: `${q}（施設データの位置・目安）`, lat, lng }];
+      return [{ label: '施設データの位置（目安）', lat, lng }];
     }
     // 駅名・地名など
     return (await gsi(q)).slice(0, 3);
   }
 
-  function show(dest) {
+  // 結果は1つの形だけ（枠の高さを決めやすくするため）。候補が複数なら1件目を出し、行き先の行を選択欄にして切り替えてもらう
+  function show(cands, i = 0) {
+    const dest = cands[i];
     const m = dist(ORIGIN, dest);
     const o = `${ORIGIN.lat},${ORIGIN.lng}`, d = `${dest.lat},${dest.lng}`;
     const gm = mode => `https://www.google.com/maps/dir/?api=1&origin=${o}&destination=${d}&travelmode=${mode}`;
+    const to = cands.length > 1
+      ? `<select id="pick" aria-label="行き先の候補">${cands.map((c, j) => `<option value="${j}"${j === i ? ' selected' : ''}>${esc(c.label)}</option>`).join('')}</select> まで`
+      : `${esc(dest.label)} まで`;
     out.innerHTML = `
       <div class="result">
-        <div class="to">${esc(dest.label)} まで</div>
-        <div class="km">${fmt(m)}<small>直線距離</small></div>
-        <div class="links">
-          <a href="${gm('transit')}" target="_blank" rel="noopener">電車の時間（Googleマップ）</a>
-          <a href="${gm('bicycling')}" target="_blank" rel="noopener">自転車</a>
+        <div class="to" title="${esc(dest.label)}">${to}</div>
+        <div class="row">
+          <span class="km">${fmt(m)}<small>直線距離</small></span>
+          <span class="links"><a href="${gm('transit')}" target="_blank" rel="noopener" title="Googleマップが開きます">電車の時間</a><a href="${gm('bicycling')}" target="_blank" rel="noopener" title="Googleマップが開きます">自転車</a></span>
         </div>
-        <p class="note">道のりではなく2点を結んだ距離です。家賃補助の境目に近い時は会社にご確認ください。</p>
+        <p class="note">※道のりではない直線の距離です。電車・自転車はGoogleマップが開きます。境目に近い時は会社にご確認ください。</p>
       </div>`;
+    const sel = document.getElementById('pick');
+    if (sel) sel.addEventListener('change', () => show(cands, Number(sel.value)));
   }
 
   $('f').addEventListener('submit', async ev => {
@@ -151,10 +160,7 @@
     try {
       const c = await findPlaces(q);
       if (!c.length) { out.innerHTML = '<p class="msg">見つかりませんでした。住所（区・町名・番地まで）で入れてみてください。</p>'; return; }
-      if (c.length === 1) { show(c[0]); return; }
-      out.innerHTML = '<p class="msg">どちらですか？</p><div class="cands">' +
-        c.map((x, i) => `<button class="cand" type="button" data-i="${i}">${esc(x.label)}</button>`).join('') + '</div>';
-      out.querySelectorAll('.cand').forEach(b => b.addEventListener('click', () => show(c[Number(b.dataset.i)])));
+      show(c, 0);
     } catch (e) {
       out.innerHTML = `<p class="msg">${esc(e.message || '検索に失敗しました')}。少し待ってからもう一度お試しください。</p>`;
     } finally {
