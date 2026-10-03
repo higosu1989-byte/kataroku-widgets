@@ -5,6 +5,8 @@
   このページに載っている情報（空室・賃料・ペット・設備など）をもとに、AIが短く答える。
   ・建物は ?e=建物ID で渡す。部屋のページから開かれた時は、埋め込み元のURL（referrer）から部屋IDを読む
   ・質問は中継（Google Apps Script）に送る。AIのキーはこのページには無い
+  ・回答に出てきた号室は、その部屋のページへのリンクにする。部屋ページの番号は中継が建物ページから取って返す（rooms）。
+    AIが書いたURLは使わない（間違ったURLや、よそのサイトへのリンクを出さないため）
   ※ 元のファイルは非公開のリポジトリにある。直す時は元を直してから、公開用のリポジトリへ写す
 -->
 <html lang="ja">
@@ -41,6 +43,7 @@
   #out.more { -webkit-mask-image: linear-gradient(#000 calc(100% - 16px), transparent); mask-image: linear-gradient(#000 calc(100% - 16px), transparent); }
   .help, .msg { margin: 0; font-size: 12px; line-height: 18px; color: var(--sub); }
   .a { margin: 0; font-size: 13px; line-height: 19px; white-space: pre-wrap; word-break: break-word; }
+  .a a { color: var(--red); text-decoration: underline; text-underline-offset: 2px; }
   .wait::after { content: ''; display: inline-block; width: 1.5em; text-align: left; animation: dots 1.2s steps(4, end) infinite; }
   @keyframes dots { 0% { content: ''; } 25% { content: '.'; } 50% { content: '..'; } 75% { content: '...'; } }
   .credit { margin: 4px 0 0; font-size: 10px; line-height: 15px; height: 15px; color: #999; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -72,6 +75,11 @@
   const $ = id => document.getElementById(id);
   const out = $('out'), q = $('q'), go = $('go');
   const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  // 回答の中の「711号室」を、その部屋のページへのリンクにする（esc した後に、中継が返した番号（数字だけ）でリンクを組む）。
+  // 押すとページごとその部屋へ移る（部屋のページにもこの質問欄がある）
+  const linkRooms = (html, rooms) => html.replace(/([A-Za-z0-9-]{1,12})号室/g, (m, no) =>
+    rooms && Object.prototype.hasOwnProperty.call(rooms, no) && /^\d+$/.test(rooms[no])
+      ? '<a href="https://kataroku.jp/building/' + ESTATE + '/' + rooms[no] + '/" target="_top">' + no + '号室</a>' : m);
   // 続きがあれば下の端を薄くする（いちばん下まで読んだら戻す）
   const fade = () => out.classList.toggle('more', !out.classList.contains('idle') && out.scrollHeight - out.scrollTop - out.clientHeight > 2);
   const say = (html, idle) => { out.className = idle ? 'idle' : ''; out.innerHTML = html; out.scrollTop = 0; fade(); };
@@ -98,11 +106,14 @@
     } catch (e) { res = { error: 'network' }; }
     busy = false; go.disabled = false;
     if (res && res.answer) {
-      hist.push({ role: 'user', content: text }, { role: 'assistant', content: res.answer });
-      while (hist.length > 4) hist.shift();
+      // 決まった答え（悪口・「本当に空いてる？」など。AIを呼んでいない）は、続けて聞く時の材料に入れない
+      if (!res.canned) {
+        hist.push({ role: 'user', content: text }, { role: 'assistant', content: res.answer });
+        while (hist.length > 4) hist.shift();
+      }
       // 聞いた質問は入力欄の薄い文字に残す（続けて聞く時に消さなくてよい）
       q.value = ''; q.placeholder = text;
-      say('<p class="a">' + esc(res.answer) + '</p>');
+      say('<p class="a">' + linkRooms(esc(res.answer), res.rooms) + '</p>');
     } else {
       // うまくいかなかった時は質問を入力欄に残す（そのまま送り直せる）
       const m = res && res.error === 'daily_cap' ? '本日の受付は終了しました。LINEでご相談ください。'
