@@ -1,0 +1,109 @@
+<!doctype html>
+<!--
+  ai.html — 物件ページに埋め込む「この物件についてAIに質問」（KATAROKU・試験中）
+
+  このページに載っている情報（空室・賃料・ペット・設備など）をもとに、AIが短く答える。
+  ・建物は ?e=建物ID で渡す。部屋のページから開かれた時は、埋め込み元のURL（referrer）から部屋IDを読む
+  ・質問は中継（Google Apps Script）に送る。AIのキーはこのページには無い
+  ※ このファイルは kataroku-bot リポジトリの widgets/ai.html を写したもの。直す時はそちらを直して写す
+-->
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>AIに質問</title>
+<style>
+  :root { --red: #d61d1d; --ink: #333; --sub: #666; --line: #ccc; }
+  * { box-sizing: border-box; }
+  /* ⚠⚠ 埋め込みの高さは固定（162px）。iframe は中身に合わせて伸ばせないので、質問前も回答後も同じ高さになるよう各段の高さを決めてある:
+       見出し20 ＋ 5 ＋ 入力欄40 ＋ 6 ＋ 回答の欄72（長い回答はこの中でスクロール） ＋ 4 ＋ 注記15 ＝ 162
+     質問前の欄は、短い文を1行ずつ4つ並べて72pxちょうどにしてある（和田さん「結果を出す前の余白は無しに」）。
+     ⚠ 長い文を2行に折り返す形にすると、画面の幅で行の数が変わって空きが出る（スマホ幅356pxでは1行に収まった）
+     「LINEで相談」は答えの下だとスクロールしないと見えないので、いちばん下の注記の行にいつも出す
+     見た目は「会社・目的地までの距離」（commute.html）に揃える: 背景なし・外側の余白なし・角4px・入力欄40px */
+  html, body { background: transparent; }
+  body { margin: 0; padding: 0; font: 14px/1.5 -apple-system, "Hiragino Sans", "Yu Gothic UI", Meiryo, sans-serif; color: var(--ink); overflow: hidden; }
+  h1 { font-size: 13px; line-height: 20px; height: 20px; margin: 0 0 5px; color: var(--red); letter-spacing: .03em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  h1 small { font-size: 10px; font-weight: 400; color: var(--sub); margin-left: 4px; }
+  form { position: relative; height: 40px; }
+  input[type=text] { display: block; width: 100%; height: 40px; margin: 0; padding: 0 44px 0 12px; border: 1px solid #c9ced6; border-radius: 4px;
+    background: #fff; color: var(--ink); font: inherit; font-size: 16px; -webkit-appearance: none; appearance: none; box-shadow: 0 1px 2px rgba(24, 33, 46, .06); }
+  input[type=text]::placeholder { color: #9aa1ab; }
+  input[type=text]:focus { outline: none; border-color: var(--red); box-shadow: 0 0 0 2px rgba(214, 29, 29, .12); }
+  .send { position: absolute; right: 0; top: 0; width: 44px; height: 40px; padding: 0; border: 0; background: none; color: var(--red); cursor: pointer; display: flex; align-items: center; justify-content: center; }
+  .send:disabled { color: #b8bec7; cursor: default; }
+  #out { height: 72px; margin-top: 6px; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+  .help, .msg { margin: 0; font-size: 12px; line-height: 18px; color: var(--sub); }
+  .q { margin: 0 0 2px; font-size: 11px; line-height: 16px; color: var(--sub); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .a { margin: 0; font-size: 13px; line-height: 19px; white-space: pre-wrap; word-break: break-word; }
+  .ex { margin: 0; font-size: 12px; line-height: 18px; color: var(--ink); }
+  .wait::after { content: ''; display: inline-block; width: 1.5em; text-align: left; animation: dots 1.2s steps(4, end) infinite; }
+  @keyframes dots { 0% { content: ''; } 25% { content: '.'; } 50% { content: '..'; } 75% { content: '...'; } }
+  .credit { margin: 4px 0 0; font-size: 10px; line-height: 15px; height: 15px; color: #999; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .credit a { color: var(--red); font-weight: 700; text-decoration: none; }
+</style>
+</head>
+<body>
+<h1>この物件についてAIに質問<small>試験中</small></h1>
+<form id="f">
+  <input type="text" id="q" placeholder="例：ペットは飼える？ いちばん安い1LDKは？" enterkeyhint="send" autocomplete="off" maxlength="200" aria-label="質問">
+  <button id="go" class="send" type="submit" aria-label="送る"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4 20-7z"/></svg></button>
+</form>
+<div id="out"><p class="help">このページの空室・賃料・ペット・設備などから、AIがお答えします。</p><p class="ex">例：いちばん安い1LDKは？／駐車場はある？</p><p class="help">載っていないことは、LINEでスタッフがお答えします。</p><p class="help">お名前や電話番号は入れないでください。</p></div>
+<p class="credit">AIの回答は掲載時点の目安です。正確な条件は <a href="https://customer.cloud.canary-app.com/kataroku-honten/create-customer" target="_blank" rel="noopener">LINEで相談 ›</a></p>
+
+<script>
+(() => {
+  // 中継（Google Apps Script のウェブアプリ）。デプロイしたURLをここに入れる
+  const PROXY = 'PROXY_URL';
+  const MAX_ASK = 10;   // 1回の閲覧で聞ける回数（使いすぎ・いたずら対策。続きは LINE へ）
+
+  const P = new URLSearchParams(location.search);
+  const ESTATE = (P.get('e') || '').replace(/\D/g, '');
+  // 部屋のページから開かれた時は部屋IDも送る（埋め込みに referrerpolicy が無いと、建物のURLしか届かないので建物の情報だけで答える）
+  let ROOM = '';
+  try { const m = document.referrer.match(/\/building\/(\d+)\/(\d+)\//); if (m && m[1] === ESTATE) ROOM = m[2]; } catch (e) { }
+  // 試す時だけ: 手元（localhost）では ?proxy= で中継を差し替えられる
+  const proxy = (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) && P.get('proxy')) || PROXY;
+
+  const $ = id => document.getElementById(id);
+  const out = $('out'), q = $('q'), go = $('go');
+  const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const say = html => { out.innerHTML = html; out.scrollTop = 0; };
+  if (!ESTATE || /PROXY_URL/.test(proxy)) { q.disabled = go.disabled = true; say('<p class="msg">準備中です。</p>'); return; }
+
+  const hist = [];
+  let asked = 0, busy = false;
+  $('f').addEventListener('submit', async ev => {
+    ev.preventDefault();
+    const text = q.value.trim();
+    if (!text || busy) return;
+    if (asked >= MAX_ASK) { say('<p class="msg">続きはLINEでお気軽にご相談ください（いちばん下の「LINEで相談」から）。</p>'); return; }
+    busy = true; go.disabled = true; asked++;
+    say('<p class="q">Q. ' + esc(text) + '</p><p class="msg wait">回答を作っています</p>');
+    let res;
+    try {
+      const ac = new AbortController();
+      const timer = setTimeout(() => ac.abort(), 40000);
+      // Content-Type を text/plain にして、事前確認（CORS のプリフライト）が起きない形で送る
+      const r = await fetch(proxy, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ e: ESTATE, r: ROOM, q: text, h: hist }), signal: ac.signal });
+      clearTimeout(timer);
+      res = await r.json();
+    } catch (e) { res = { error: 'network' }; }
+    busy = false; go.disabled = false;
+    if (res && res.answer) {
+      hist.push({ role: 'user', content: text }, { role: 'assistant', content: res.answer });
+      while (hist.length > 4) hist.shift();
+      q.value = '';
+      say('<p class="q">Q. ' + esc(text) + '</p><p class="a">' + esc(res.answer) + '</p>');
+    } else {
+      const m = res && res.error === 'daily_cap' ? '本日の受付は終了しました。LINEでご相談ください。'
+        : 'うまくつながりませんでした。少し時間をおいてお試しください。';
+      say('<p class="q">Q. ' + esc(text) + '</p><p class="msg">' + m + '</p>');
+    }
+  });
+})();
+</script>
+</body>
+</html>
