@@ -135,7 +135,10 @@
       }
       // 聞いた質問は入力欄の薄い文字に残す（続けて聞く時に消さなくてよい）
       q.value = ''; q.placeholder = text;
-      say('<p class="a">' + linkAll(res.answer, res.rooms, res.links) + '</p>');
+      let html = linkAll(res.answer, res.rooms, res.links);
+      // 決まった答え（悪口・記号だけ・他社キャンペーン・本当に空いてる？）には、いつもLINEの入口を付ける（文にLINEが無い時は後ろに足す）
+      if (res.canned && html.indexOf('class="line"') < 0) html += ' ' + lineA('LINEで相談する');
+      say('<p class="a">' + html + '</p>');
     } else {
       // うまくいかなかった時は質問を入力欄に残す（そのまま送り直せる）
       const m = res && res.error === 'daily_cap' ? '本日の受付は終了しました。' + lineA('LINEでご相談') + 'ください。'
