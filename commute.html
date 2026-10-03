@@ -17,14 +17,14 @@
   :root { --red: #d61d1d; --ink: #333; --sub: #666; --line: #ccc; }
   * { box-sizing: border-box; }
   /* ⚠⚠ 埋め込みの高さは固定（add_commute_widget.js の HEIGHT＝138px）。iframe は中身に合わせて伸ばせないので、
-       【検索前も結果も同じ高さ】になるよう、各段の高さをピクセルで決めてある（和田さん「下の余白は結果を出すまで無しに」）:
+       【検索前も結果も同じ高さ】になるよう、各段の高さをピクセルで決めてある:
          見出し20 ＋ 5 ＋ 検索バー40 ＋ 6 ＋ 結果の欄48（案内文2行／行き先＋距離の2行／見つからない時の2行）＋ 4 ＋ 出典15 ＝ 138
        字の大きさや文言を変えたら、幅320px（パソコンの右の欄）と356px（スマホ）で、案内文・結果が2行に収まるか確かめること
      ⚠ 背景は付けない（透明）。外側の余白も無し。建物ページの灰色の欄（#eee）に、上の行と頭を揃えて置く */
   html, body { background: transparent; }
   body { margin: 0; padding: 0; font: 14px/1.5 -apple-system, "Hiragino Sans", "Yu Gothic UI", Meiryo, sans-serif; color: var(--ink); overflow: hidden; }
   h1 { font-size: 13px; line-height: 20px; height: 20px; margin: 0 0 5px; color: var(--red); letter-spacing: .03em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  /* 検索バーは入力欄1つだけ（和田さん「このくらいシンプルでいい」）。左の虫眼鏡を押しても、Enter（スマホは「検索」キー）でも調べる。
+  /* 検索バーは入力欄1つだけ。左の虫眼鏡を押しても、Enter（スマホは「検索」キー）でも調べる。
      角の丸みはサイトの部品に揃えて4px（ヘッダーの検索欄4px・検索ボタン5px・ほかの枠やカードは0）。高さ40pxは指で押しやすい大きさ */
   form { position: relative; height: 40px; }
   input[type=search] { display: block; width: 100%; height: 40px; margin: 0; padding: 0 12px 0 38px; border: 1px solid #c9ced6; border-radius: 4px;
