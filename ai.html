@@ -45,6 +45,8 @@
   .help, .msg { margin: 0; font-size: 12px; line-height: 18px; color: var(--sub); }
   .a { margin: 0; font-size: 13px; line-height: 19px; white-space: pre-wrap; word-break: break-word; }
   .a a { color: var(--red); text-decoration: underline; text-underline-offset: 2px; }
+  /* 回答の中の「LINEでお問合せ下さい」は、LINEの緑のボタン風のリンクにして目立たせる（行の高さは変えない） */
+  .a a.line, .msg a.line { display: inline-block; padding: 0 9px; margin: 0 2px; border-radius: 999px; background: #06c755; color: #fff; font-weight: 700; text-decoration: none; white-space: nowrap; }
   .wait::after { content: ''; display: inline-block; width: 1.5em; text-align: left; animation: dots 1.2s steps(4, end) infinite; }
   @keyframes dots { 0% { content: ''; } 25% { content: '.'; } 50% { content: '..'; } 75% { content: '...'; } }
   .credit { margin: 4px 0 0; font-size: 10px; line-height: 15px; height: 15px; color: #999; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -78,6 +80,10 @@
   const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   // 回答の中の「711号室」を、その部屋のページへのリンクにする（esc した後に、中継が返した番号（数字だけ）でリンクを組む）。
   // 押すとページごとその部屋へ移る（部屋のページにもこの質問欄がある）
+  // 「LINEでお問合せ下さい」「LINEでご確認ください」などを、LINEの相談の入口（下の「LINEで相談」と同じ）へのリンクにする
+  const LINE = 'https://customer.cloud.canary-app.com/kataroku-honten/create-customer';
+  const lineA = t => '<a class="line" href="' + LINE + '" target="_blank" rel="noopener">' + t + '</a>';
+  const linkLine = html => html.replace(/LINE[^。、！!？?\n<⟦]{0,14}/g, m => lineA(m));
   const linkRooms = (html, rooms) => html.replace(/([A-Za-z0-9-]{1,12})号室/g, (m, no) =>
     rooms && Object.prototype.hasOwnProperty.call(rooms, no) && /^\d+$/.test(rooms[no])
       ? '<a href="https://kataroku.jp/building/' + ESTATE + '/' + rooms[no] + '/" target="_top">' + no + '号室</a>' : m);
@@ -94,7 +100,7 @@
       const i = marks.push('<a href="' + l[1] + '" target="_top">' + t + '</a>') - 1;
       html = html.split(t).join('⟦' + i + '⟧');
     });
-    return linkRooms(html, rooms).replace(/⟦(\d+)⟧/g, (m, i) => marks[i] || '');
+    return linkRooms(linkLine(html), rooms).replace(/⟦(\d+)⟧/g, (m, i) => marks[i] || '');
   };
   // 続きがあれば下の端を薄くする（いちばん下まで読んだら戻す）
   const fade = () => out.classList.toggle('more', !out.classList.contains('idle') && out.scrollHeight - out.scrollTop - out.clientHeight > 2);
@@ -108,7 +114,7 @@
     ev.preventDefault();
     const text = q.value.trim();
     if (!text || busy) return;
-    if (asked >= MAX_ASK) { say('<p class="msg">続きはLINEでお気軽にご相談ください（いちばん下の「LINEで相談」から）。</p>'); return; }
+    if (asked >= MAX_ASK) { say('<p class="msg">続きは' + lineA('LINEでお気軽にご相談') + 'ください。</p>'); return; }
     busy = true; go.disabled = true; asked++;
     say('<p class="msg wait">回答を作っています</p>');
     let res;
@@ -132,7 +138,7 @@
       say('<p class="a">' + linkAll(res.answer, res.rooms, res.links) + '</p>');
     } else {
       // うまくいかなかった時は質問を入力欄に残す（そのまま送り直せる）
-      const m = res && res.error === 'daily_cap' ? '本日の受付は終了しました。LINEでご相談ください。'
+      const m = res && res.error === 'daily_cap' ? '本日の受付は終了しました。' + lineA('LINEでご相談') + 'ください。'
         : 'うまくつながりませんでした。少し時間をおいてお試しください。';
       say('<p class="msg">' + m + '</p>');
     }
