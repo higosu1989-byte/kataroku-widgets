@@ -126,7 +126,7 @@
     ev.preventDefault();
     const text = q.value.trim();
     if (!text || busy) return;
-    if (usedToday() >= MAX_PER_DAY) { say('<p class="msg">今日のAIへの質問は' + MAX_PER_DAY + '問までです。続きは' + lineA('LINEでお気軽にご相談') + 'ください。</p>'); return; }
+    if (usedToday() >= MAX_PER_DAY) { say('<p class="msg">試験運用中のため' + MAX_PER_DAY + '問までです。続きは' + lineA('LINEでお気軽にご相談') + 'ください。</p>'); return; }
     busy = true; go.disabled = true;
     say('<p class="msg wait">回答を作っています</p>');
     let res;
@@ -154,7 +154,7 @@
       say('<p class="a">' + html + '</p>');
     } else {
       // うまくいかなかった時は質問を入力欄に残す（そのまま送り直せる）
-      const m = res && res.error === 'daily_cap' ? '本日の受付は終了しました。' + lineA('LINEでご相談') + 'ください。'
+      const m = res && res.error === 'daily_cap' ? '試験運用中のため、本日の受付は終了しました。' + lineA('LINEでご相談') + 'ください。'
         : 'うまくつながりませんでした。少し時間をおいてお試しください。';
       say('<p class="msg">' + m + '</p>');
     }
