@@ -1,0 +1,167 @@
+<!doctype html>
+<!--
+  commute.html — 物件ページに埋め込む「会社・目的地までの距離」（KATAROKU）
+
+  会社の住所かビル名を入れると、物件からの直線距離を出し、電車・自転車での行き方は Googleマップを開くリンクで案内する。
+  ・物件の位置は ?ll=緯度,経度 で渡す（?lat=…&lng=… でも可）
+  ・位置の検索: 住所は国土地理院の住所検索、ビル名は OpenPOI API（施設の住所を取り、その住所を国土地理院の検索で位置にする）
+  ※ このファイルは kataroku-bot リポジトリの widgets/commute.html を写したもの。直す時はそちらを直して写す
+-->
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>会社までの距離</title>
+<style>
+  :root { --red: #d61d1d; --ink: #222; --sub: #666; --line: #ddd; --bg: #fff; --soft: #f7f7f7; }
+  * { box-sizing: border-box; }
+  /* ⚠ 埋め込みの高さは固定（add_commute_widget.js の HEIGHT）。強調文（ファーストビュー）に置くので背を低く詰めてある。
+       幅320px（パソコンの右の欄）と343px（スマホ）で、最初・結果・候補3件のどれもが枠に収まるか測ってから変えること */
+  body { margin: 0; padding: 8px 10px; font: 14px/1.55 -apple-system, "Hiragino Sans", "Yu Gothic UI", Meiryo, sans-serif; color: var(--ink); background: var(--bg); }
+  h1 { font-size: 14px; margin: 0 0 6px; color: var(--red); letter-spacing: .03em; }
+  form { display: flex; gap: 6px; }
+  input[type=text] { flex: 1; min-width: 0; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; font-size: 16px; }
+  button { padding: 8px 14px; border: 0; border-radius: 8px; background: var(--red); color: #fff; font-weight: 700; font-size: 14px; cursor: pointer; white-space: nowrap; }
+  button:disabled { opacity: .5; }
+  .help { margin: 6px 0 0; font-size: 12px; color: var(--sub); line-height: 1.5; }
+  .msg { margin: 6px 0 0; font-size: 13px; color: var(--sub); }
+  .cands { margin-top: 4px; display: grid; gap: 4px; }
+  .cand { text-align: left; padding: 5px 10px; background: var(--soft); color: var(--ink); font-weight: 400; font-size: 13px; border: 1px solid var(--line); }
+  .result { margin-top: 6px; padding: 6px 10px; border: 1px solid var(--line); border-radius: 10px; background: var(--soft); }
+  .to { font-size: 12px; color: var(--sub); line-height: 1.45; }
+  .km { font-size: 20px; font-weight: 700; margin: 0 0 4px; line-height: 1.3; }
+  .km small { font-size: 12px; font-weight: 400; color: var(--sub); margin-left: 6px; }
+  .links { display: flex; flex-wrap: wrap; gap: 6px; }
+  .links a { display: inline-block; padding: 5px 10px; border-radius: 999px; border: 1px solid var(--red); color: var(--red); text-decoration: none; font-size: 12px; font-weight: 700; background: #fff; }
+  .note { font-size: 11px; color: var(--sub); margin: 4px 0 0; line-height: 1.4; }
+  .credit { font-size: 10px; color: #aaa; margin: 6px 0 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .credit a { color: #aaa; }
+</style>
+</head>
+<body>
+<h1>この物件から会社・目的地までの距離</h1>
+<form id="f">
+  <input type="text" id="q" placeholder="会社の住所かビル名" autocomplete="off" aria-label="会社の住所かビル名">
+  <button id="go" type="submit">調べる</button>
+</form>
+<div id="out"><p class="help">会社の住所かビル名を入れると、直線距離と電車での行き方が分かります。家賃補助の「半径◯km以内」の確認にも。</p></div>
+<p class="credit">位置の検索：<a href="https://maps.gsi.go.jp/" target="_blank" rel="noopener">国土地理院</a>・<a href="https://openpoiapi.com/attribution.html" target="_blank" rel="noopener">OpenPOI API</a></p>
+
+<script>
+(() => {
+  const P = new URLSearchParams(location.search);
+  // 建物の位置は ?ll=緯度,経度（備考の iframe はこの形。& を使うと CMS や HTML で &lng が文字参照に化ける心配がある）
+  // ⚠ Number(null) は 0 になり、位置が無いのに赤道上の(0,0)から測ってしまう。parseFloat なら NaN
+  const ll = (P.get('ll') || '').split(',');
+  const ORIGIN = { lat: parseFloat(P.get('lat') ?? ll[0]), lng: parseFloat(P.get('lng') ?? ll[1]) };
+  const $ = id => document.getElementById(id);
+  const out = $('out');
+  const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  if (!isFinite(ORIGIN.lat) || !isFinite(ORIGIN.lng)) { $('go').disabled = true; out.innerHTML = '<p class="msg">物件の位置が設定されていません。</p>'; return; }
+
+  // 首都圏だけを候補にする（同じ地名が全国にあるため）
+  const AREA = /^(東京都|神奈川県|埼玉県|千葉県)/;
+  const half = s => String(s || '').replace(/[０-９Ａ-Ｚａ-ｚ]/g, c => String.fromCharCode(c.charCodeAt(0) - 0xFEE0)).replace(/[－‐―−]/g, '-');
+  const key = s => half(s).replace(/[\s　・･]/g, '').toLowerCase();
+  const short = t => half(t).replace(AREA, '');   // 「東京都渋谷区渋谷二丁目２４番１２号」→「渋谷区渋谷二丁目24番12号」（枠に収めるため短く）
+
+  // 2点の直線距離（m）
+  const dist = (a, b) => {
+    const R = 6371008.8, r = Math.PI / 180;
+    const h = Math.sin((b.lat - a.lat) * r / 2) ** 2 + Math.cos(a.lat * r) * Math.cos(b.lat * r) * Math.sin((b.lng - a.lng) * r / 2) ** 2;
+    return 2 * R * Math.asin(Math.sqrt(h));
+  };
+  const fmt = m => m < 1000 ? `約${Math.round(m / 10) * 10}m` : `約${(m / 1000).toFixed(2)}km`;
+
+  async function gsi(q) {
+    const r = await fetch('https://msearch.gsi.go.jp/address-search/AddressSearch?q=' + encodeURIComponent(q));
+    if (!r.ok) throw new Error('住所検索に失敗しました');
+    return (await r.json())
+      .filter(x => AREA.test(x.properties.title))
+      .map(x => ({ label: short(x.properties.title), lat: x.geometry.coordinates[1], lng: x.geometry.coordinates[0] }));
+  }
+  async function poi(q) {
+    const r = await fetch('https://api.openpoiapi.com/v1/search?q=' + encodeURIComponent(q) + '&center=139.75,35.68&radius=60000&limit=30');
+    if (!r.ok) throw new Error('施設の検索に失敗しました');
+    return (await r.json()).results || [];
+  }
+  // 「東京都渋谷区渋谷2-24-12 渋谷スクランブルスクエア９階」→「東京都渋谷区渋谷2-24-12」
+  const addrHead = a => {
+    const s = half(a).split(/[\s　]/)[0];
+    return AREA.test(s) && /\d/.test(s) ? s : '';
+  };
+  const looksLikeAddress = s => /\d/.test(half(s)) && /(区|市|町|村|丁目|番|号|-)/.test(half(s));
+  // 50m以内の重複を1つにまとめる
+  const dedupe = list => list.filter((c, i) => !list.slice(0, i).some(d => dist(c, d) < 50));
+
+  async function findPlaces(q) {
+    if (looksLikeAddress(q)) {
+      const g = await gsi(q);
+      if (g.length) return g.slice(0, 3);   // 候補は3件まで（枠の高さに収める）
+    }
+    // ビル名・施設名: OpenPOIで住所を取り、その住所を国土地理院の検索で位置にする（施設データの位置はずれていることがあるため）
+    const k = key(q);
+    const hits = (await poi(q)).filter(x => key(x.name).includes(k) || key(x.address).includes(k));
+    const heads = [...new Set(hits.map(x => addrHead(x.address)).filter(Boolean))].slice(0, 4);
+    let cands = [];
+    for (const h of heads) {
+      const g = await gsi(h);
+      if (g.length) cands.push({ label: `${q}（${g[0].label}）`, lat: g[0].lat, lng: g[0].lng });
+    }
+    cands = dedupe(cands);
+    if (cands.length) return cands.slice(0, 3);
+    // 住所が無い施設だけ当たった時: 施設データの位置のうち一番まとまっている所を使う
+    const pts = hits.filter(x => isFinite(x.lat) && isFinite(x.lng));
+    if (pts.length) {
+      let best = null;
+      for (const p of pts) {
+        const near = pts.filter(o => dist(p, o) < 300);
+        if (!best || near.length > best.length) best = near;
+      }
+      const lat = best.reduce((s, o) => s + o.lat, 0) / best.length, lng = best.reduce((s, o) => s + o.lng, 0) / best.length;
+      return [{ label: `${q}（施設データの位置・目安）`, lat, lng }];
+    }
+    // 駅名・地名など
+    return (await gsi(q)).slice(0, 3);
+  }
+
+  function show(dest) {
+    const m = dist(ORIGIN, dest);
+    const o = `${ORIGIN.lat},${ORIGIN.lng}`, d = `${dest.lat},${dest.lng}`;
+    const gm = mode => `https://www.google.com/maps/dir/?api=1&origin=${o}&destination=${d}&travelmode=${mode}`;
+    out.innerHTML = `
+      <div class="result">
+        <div class="to">${esc(dest.label)} まで</div>
+        <div class="km">${fmt(m)}<small>直線距離</small></div>
+        <div class="links">
+          <a href="${gm('transit')}" target="_blank" rel="noopener">電車の時間（Googleマップ）</a>
+          <a href="${gm('bicycling')}" target="_blank" rel="noopener">自転車</a>
+        </div>
+        <p class="note">道のりではなく2点を結んだ距離です。家賃補助の境目に近い時は会社にご確認ください。</p>
+      </div>`;
+  }
+
+  $('f').addEventListener('submit', async ev => {
+    ev.preventDefault();
+    const q = $('q').value.trim();
+    if (!q) return;
+    $('go').disabled = true;
+    out.innerHTML = '<p class="msg">検索しています…</p>';
+    try {
+      const c = await findPlaces(q);
+      if (!c.length) { out.innerHTML = '<p class="msg">見つかりませんでした。住所（区・町名・番地まで）で入れてみてください。</p>'; return; }
+      if (c.length === 1) { show(c[0]); return; }
+      out.innerHTML = '<p class="msg">どちらですか？</p><div class="cands">' +
+        c.map((x, i) => `<button class="cand" type="button" data-i="${i}">${esc(x.label)}</button>`).join('') + '</div>';
+      out.querySelectorAll('.cand').forEach(b => b.addEventListener('click', () => show(c[Number(b.dataset.i)])));
+    } catch (e) {
+      out.innerHTML = `<p class="msg">${esc(e.message || '検索に失敗しました')}。少し待ってからもう一度お試しください。</p>`;
+    } finally {
+      $('go').disabled = false;
+    }
+  });
+})();
+</script>
+</body>
+</html>
