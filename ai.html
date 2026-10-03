@@ -46,6 +46,7 @@
   .a { margin: 0; font-size: 13px; line-height: 19px; white-space: pre-wrap; word-break: break-word; }
   .a a { color: var(--red); text-decoration: underline; text-underline-offset: 2px; }
   /* 回答の中の「LINEでお問合せ下さい」は、LINEの緑のボタン風のリンクにして目立たせる（行の高さは変えない） */
+  .nw { white-space: nowrap; }   /* 「くださ／い。」のように途中で改行させない */
   .a a.line, .msg a.line { display: inline-block; padding: 0 9px; margin: 0 2px; border-radius: 999px; background: #06c755; color: #fff; font-weight: 700; text-decoration: none; white-space: nowrap; }
   .wait::after { content: ''; display: inline-block; width: 1.5em; text-align: left; animation: dots 1.2s steps(4, end) infinite; }
   @keyframes dots { 0% { content: ''; } 25% { content: '.'; } 50% { content: '..'; } 75% { content: '...'; } }
@@ -126,7 +127,7 @@
     ev.preventDefault();
     const text = q.value.trim();
     if (!text || busy) return;
-    if (usedToday() >= MAX_PER_DAY) { say('<p class="msg">試験運用中のため' + MAX_PER_DAY + '問までです。続きは' + lineA('LINEでお気軽にご相談') + 'ください。</p>'); return; }
+    if (usedToday() >= MAX_PER_DAY) { say('<p class="msg">試験運用中のため' + MAX_PER_DAY + '問までです。続きは' + lineA('LINEでお気軽にご相談') + '<span class="nw">ください。</span></p>'); return; }
     busy = true; go.disabled = true;
     say('<p class="msg wait">回答を作っています</p>');
     let res;
@@ -154,7 +155,7 @@
       say('<p class="a">' + html + '</p>');
     } else {
       // うまくいかなかった時は質問を入力欄に残す（そのまま送り直せる）
-      const m = res && res.error === 'daily_cap' ? '試験運用中のため、本日の受付は終了しました。' + lineA('LINEでご相談') + 'ください。'
+      const m = res && res.error === 'daily_cap' ? '試験運用中のため、本日の受付は終了しました。' + lineA('LINEでご相談') + '<span class="nw">ください。</span>'
         : 'うまくつながりませんでした。少し時間をおいてお試しください。';
       say('<p class="msg">' + m + '</p>');
     }
