@@ -65,7 +65,19 @@
 (() => {
   // 中継（Google Apps Script のウェブアプリ）。デプロイしたURLをここに入れる
   const PROXY = 'https://script.google.com/macros/s/AKfycbxWJCz1yYMcMdVZn-kH7MiAU2IxRl5QHvv1jiB4naaYJgIPDIxnVFI8IYipvXi_Hz1nlA/exec';
-  const MAX_ASK = 10;   // 1回の閲覧で聞ける回数（使いすぎ・いたずら対策。続きは LINE へ）
+  // 同じブラウザから1日に聞ける回数（使いすぎ・いたずら対策。続きは LINE へ）。全員合わせた1日の上限は中継の DAILY_CAP（30回）。
+  // 数えるのはAIが答えた分だけ（決まった答え・つながらなかった時は数えない）。日付は日本時間。
+  // 数える場所はこのブラウザの保存領域。使えない時（プライベートブラウズなど）は、この閲覧の間だけ数える
+  const MAX_PER_DAY = 5;
+  const CK = 'kataroku_ai_count';
+  const today = () => new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10);
+  let counted = { d: today(), n: 0 };
+  const usedToday = () => {
+    try { const v = JSON.parse(localStorage.getItem(CK) || 'null'); if (v && v.d === today()) counted = v; else counted = { d: today(), n: 0 }; }
+    catch (e) { if (counted.d !== today()) counted = { d: today(), n: 0 }; }
+    return counted.n;
+  };
+  const addUse = () => { usedToday(); counted.n++; try { localStorage.setItem(CK, JSON.stringify(counted)); } catch (e) { /* この閲覧の間だけ数える */ } };
 
   const P = new URLSearchParams(location.search);
   const ESTATE = (P.get('e') || '').replace(/\D/g, '');
@@ -109,13 +121,13 @@
   if (!ESTATE || /PROXY_URL/.test(proxy)) { q.disabled = go.disabled = true; say('<p class="msg">準備中です。</p>', true); return; }
 
   const hist = [];
-  let asked = 0, busy = false;
+  let busy = false;
   $('f').addEventListener('submit', async ev => {
     ev.preventDefault();
     const text = q.value.trim();
     if (!text || busy) return;
-    if (asked >= MAX_ASK) { say('<p class="msg">続きは' + lineA('LINEでお気軽にご相談') + 'ください。</p>'); return; }
-    busy = true; go.disabled = true; asked++;
+    if (usedToday() >= MAX_PER_DAY) { say('<p class="msg">今日のAIへの質問は' + MAX_PER_DAY + '問までです。続きは' + lineA('LINEでお気軽にご相談') + 'ください。</p>'); return; }
+    busy = true; go.disabled = true;
     say('<p class="msg wait">回答を作っています</p>');
     let res;
     try {
@@ -128,8 +140,9 @@
     } catch (e) { res = { error: 'network' }; }
     busy = false; go.disabled = false;
     if (res && res.answer) {
-      // 決まった答え（悪口・「本当に空いてる？」など。AIを呼んでいない）は、続けて聞く時の材料に入れない
+      // 決まった答え（悪口・「本当に空いてる？」など。AIを呼んでいない）は、続けて聞く時の材料に入れず、1日の回数にも数えない
       if (!res.canned) {
+        addUse();
         hist.push({ role: 'user', content: text }, { role: 'assistant', content: res.answer });
         while (hist.length > 4) hist.shift();
       }
