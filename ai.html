@@ -7,6 +7,7 @@
   ・質問は中継（Google Apps Script）に送る。AIのキーはこのページには無い
   ・回答に出てきた号室は、その部屋のページへのリンクにする。部屋ページの番号は中継が建物ページから取って返す（rooms）。
     AIが書いたURLは使わない（間違ったURLや、よそのサイトへのリンクを出さないため）
+  ・ほかの物件を聞かれた時（「他に有明に1LDKある？」）は、中継が掲載中の物件から候補を選び、「建物名 号室」と部屋ページのURLを links で返す
   ※ 元のファイルは非公開のリポジトリにある。直す時は元を直してから、公開用のリポジトリへ写す
 -->
 <html lang="ja">
@@ -80,6 +81,21 @@
   const linkRooms = (html, rooms) => html.replace(/([A-Za-z0-9-]{1,12})号室/g, (m, no) =>
     rooms && Object.prototype.hasOwnProperty.call(rooms, no) && /^\d+$/.test(rooms[no])
       ? '<a href="https://kataroku.jp/building/' + ESTATE + '/' + rooms[no] + '/" target="_top">' + no + '号室</a>' : m);
+  // ほかの物件（「他に有明に1LDKある？」など）: 中継が返す [「建物名 号室」, 部屋ページのURL]。URL は kataroku.jp の部屋ページの形だけ使う。
+  // ⚠ 先に印（⟦0⟧）に置き換えてから、この建物の号室をリンクにする。順番が逆だと、別の建物の「1203号室」が
+  //   この建物の1203号室へのリンクになってしまう
+  const linkAll = (text, rooms, links) => {
+    let html = esc(text);
+    const marks = [];
+    (Array.isArray(links) ? links : []).forEach(l => {
+      if (!Array.isArray(l) || typeof l[0] !== 'string' || !/^https:\/\/kataroku\.jp\/building\/\d+\/\d+\/$/.test(l[1] || '')) return;
+      const t = esc(l[0]);
+      if (!t || html.indexOf(t) < 0) return;
+      const i = marks.push('<a href="' + l[1] + '" target="_top">' + t + '</a>') - 1;
+      html = html.split(t).join('⟦' + i + '⟧');
+    });
+    return linkRooms(html, rooms).replace(/⟦(\d+)⟧/g, (m, i) => marks[i] || '');
+  };
   // 続きがあれば下の端を薄くする（いちばん下まで読んだら戻す）
   const fade = () => out.classList.toggle('more', !out.classList.contains('idle') && out.scrollHeight - out.scrollTop - out.clientHeight > 2);
   const say = (html, idle) => { out.className = idle ? 'idle' : ''; out.innerHTML = html; out.scrollTop = 0; fade(); };
@@ -113,7 +129,7 @@
       }
       // 聞いた質問は入力欄の薄い文字に残す（続けて聞く時に消さなくてよい）
       q.value = ''; q.placeholder = text;
-      say('<p class="a">' + linkRooms(esc(res.answer), res.rooms) + '</p>');
+      say('<p class="a">' + linkAll(res.answer, res.rooms, res.links) + '</p>');
     } else {
       // うまくいかなかった時は質問を入力欄に残す（そのまま送り直せる）
       const m = res && res.error === 'daily_cap' ? '本日の受付は終了しました。LINEでご相談ください。'
