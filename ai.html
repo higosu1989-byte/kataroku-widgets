@@ -16,20 +16,19 @@
 <style>
   :root { --red: #d61d1d; --ink: #333; --sub: #666; --line: #ccc; }
   * { box-sizing: border-box; }
-  /* ⚠⚠ 埋め込みの高さは固定（162px）。iframe は中身に合わせて伸ばせないので、質問前も回答後も同じ高さになるよう各段の高さを決めてある:
-       見出し20 ＋ 5 ＋ 入力欄40 ＋ 6 ＋ 回答の欄72（長い回答はこの中でスクロール） ＋ 4 ＋ 注記15 ＝ 162
-     質問前の欄は、短い文を1行ずつ4つ並べて72pxちょうどにしてある。
-     ⚠ 長い文を2行に折り返す形にすると、画面の幅で行の数が変わって空きが出る
+  /* ⚠⚠ 埋め込みの高さは固定（122px）。iframe は中身に合わせて伸ばせないので、質問前も回答後も同じ高さになるよう各段の高さを決めてある:
+       入力欄40 ＋ 6 ＋ 回答の欄57（3行分。長い回答はこの中でスクロール） ＋ 4 ＋ 注記15 ＝ 122
+     質問前は、回答の欄に説明を1行だけ出す（上下の中央に置く）。質問の例は入力欄の中に出す
+     質問した後は入力欄を空にし、聞いた質問を入力欄の薄い文字に残す（回答の欄を回答だけに使い、続けて聞く時は消さずに打てる）
+     回答に続きがある時は、欄の下の端を薄くして知らせる（いちばん下までスクロールしたら戻す）
      ⚠⚠ 各行は【かなが全角幅の字】（iPhone・Androidの字）で幅330px以内に収める。Windowsの字（Yu Gothic UI）はかなが細いので、
-        パソコンで1行に収まっても電話では折り返し、最後の行が欄の外に出る（12pxの全角で27字・英字は2字で1字分ほど）
+        パソコンで1行に収まっても電話では折り返す（12pxの全角で27字・英字は2字で1字分ほど）
      「LINEで相談」は答えの下だとスクロールしないと見えないので、いちばん下の注記の行にいつも出す
      見た目は「会社・目的地までの距離」（commute.html）に揃える: 背景なし・角4px・入力欄40px
      外側の余白はなし。ただし幅が480pxより狭い時（スマホで画面の幅いっぱいに置かれた時）は、文字が画面の端に付かないよう左右に12px取る */
   html, body { background: transparent; }
   body { margin: 0; padding: 0; font: 14px/1.5 -apple-system, "Hiragino Sans", "Yu Gothic UI", Meiryo, sans-serif; color: var(--ink); overflow: hidden; }
   @media (max-width: 479px) { body { padding: 0 12px; } }
-  h1 { font-size: 13px; line-height: 20px; height: 20px; margin: 0 0 5px; color: var(--red); letter-spacing: .03em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  h1 small { font-size: 10px; font-weight: 400; color: var(--sub); margin-left: 4px; }
   form { position: relative; height: 40px; }
   input[type=text] { display: block; width: 100%; height: 40px; margin: 0; padding: 0 44px 0 12px; border: 1px solid #c9ced6; border-radius: 4px;
     background: #fff; color: var(--ink); font: inherit; font-size: 16px; -webkit-appearance: none; appearance: none; box-shadow: 0 1px 2px rgba(24, 33, 46, .06); }
@@ -37,11 +36,11 @@
   input[type=text]:focus { outline: none; border-color: var(--red); box-shadow: 0 0 0 2px rgba(214, 29, 29, .12); }
   .send { position: absolute; right: 0; top: 0; width: 44px; height: 40px; padding: 0; border: 0; background: none; color: var(--red); cursor: pointer; display: flex; align-items: center; justify-content: center; }
   .send:disabled { color: #b8bec7; cursor: default; }
-  #out { height: 72px; margin-top: 6px; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+  #out { height: 57px; margin-top: 6px; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+  #out.idle { display: flex; align-items: center; overflow: hidden; }
+  #out.more { -webkit-mask-image: linear-gradient(#000 calc(100% - 16px), transparent); mask-image: linear-gradient(#000 calc(100% - 16px), transparent); }
   .help, .msg { margin: 0; font-size: 12px; line-height: 18px; color: var(--sub); }
-  .q { margin: 0 0 2px; font-size: 11px; line-height: 16px; color: var(--sub); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .a { margin: 0; font-size: 13px; line-height: 19px; white-space: pre-wrap; word-break: break-word; }
-  .ex { margin: 0; font-size: 12px; line-height: 18px; color: var(--ink); }
   .wait::after { content: ''; display: inline-block; width: 1.5em; text-align: left; animation: dots 1.2s steps(4, end) infinite; }
   @keyframes dots { 0% { content: ''; } 25% { content: '.'; } 50% { content: '..'; } 75% { content: '...'; } }
   .credit { margin: 4px 0 0; font-size: 10px; line-height: 15px; height: 15px; color: #999; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -49,12 +48,11 @@
 </style>
 </head>
 <body>
-<h1>この物件についてAIに質問<small>試験中</small></h1>
 <form id="f">
-  <input type="text" id="q" placeholder="例：ペットは飼える？" enterkeyhint="send" autocomplete="off" maxlength="200" aria-label="質問">
+  <input type="text" id="q" placeholder="例：いちばん安い1LDKは？" enterkeyhint="send" autocomplete="off" maxlength="200" aria-label="この物件についてAIに質問">
   <button id="go" class="send" type="submit" aria-label="送る"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4 20-7z"/></svg></button>
 </form>
-<div id="out"><p class="help">このページの空室・賃料・設備などからAIがお答えします。</p><p class="ex">例：いちばん安い1LDKは？／駐車場はある？</p><p class="help">載っていないことは、LINEでスタッフがお答えします。</p><p class="help">お名前や電話番号は入れないでください。</p></div>
+<div id="out" class="idle" aria-live="polite"><p class="help">このページの空室・賃料・設備などからAIがお答えします。</p></div>
 <p class="credit">AIの回答は掲載時点の目安です。正確な条件は <a href="https://customer.cloud.canary-app.com/kataroku-honten/create-customer" target="_blank" rel="noopener">LINEで相談 ›</a></p>
 
 <script>
@@ -74,8 +72,11 @@
   const $ = id => document.getElementById(id);
   const out = $('out'), q = $('q'), go = $('go');
   const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-  const say = html => { out.innerHTML = html; out.scrollTop = 0; };
-  if (!ESTATE || /PROXY_URL/.test(proxy)) { q.disabled = go.disabled = true; say('<p class="msg">準備中です。</p>'); return; }
+  // 続きがあれば下の端を薄くする（いちばん下まで読んだら戻す）
+  const fade = () => out.classList.toggle('more', !out.classList.contains('idle') && out.scrollHeight - out.scrollTop - out.clientHeight > 2);
+  const say = (html, idle) => { out.className = idle ? 'idle' : ''; out.innerHTML = html; out.scrollTop = 0; fade(); };
+  out.addEventListener('scroll', fade, { passive: true });
+  if (!ESTATE || /PROXY_URL/.test(proxy)) { q.disabled = go.disabled = true; say('<p class="msg">準備中です。</p>', true); return; }
 
   const hist = [];
   let asked = 0, busy = false;
@@ -85,7 +86,7 @@
     if (!text || busy) return;
     if (asked >= MAX_ASK) { say('<p class="msg">続きはLINEでお気軽にご相談ください（いちばん下の「LINEで相談」から）。</p>'); return; }
     busy = true; go.disabled = true; asked++;
-    say('<p class="q">Q. ' + esc(text) + '</p><p class="msg wait">回答を作っています</p>');
+    say('<p class="msg wait">回答を作っています</p>');
     let res;
     try {
       const ac = new AbortController();
@@ -99,12 +100,14 @@
     if (res && res.answer) {
       hist.push({ role: 'user', content: text }, { role: 'assistant', content: res.answer });
       while (hist.length > 4) hist.shift();
-      q.value = '';
-      say('<p class="q">Q. ' + esc(text) + '</p><p class="a">' + esc(res.answer) + '</p>');
+      // 聞いた質問は入力欄の薄い文字に残す（続けて聞く時に消さなくてよい）
+      q.value = ''; q.placeholder = text;
+      say('<p class="a">' + esc(res.answer) + '</p>');
     } else {
+      // うまくいかなかった時は質問を入力欄に残す（そのまま送り直せる）
       const m = res && res.error === 'daily_cap' ? '本日の受付は終了しました。LINEでご相談ください。'
         : 'うまくつながりませんでした。少し時間をおいてお試しください。';
-      say('<p class="q">Q. ' + esc(text) + '</p><p class="msg">' + m + '</p>');
+      say('<p class="msg">' + m + '</p>');
     }
   });
 })();
