@@ -88,6 +88,13 @@
   try { const m = document.referrer.match(/\/building\/(\d+)\/(\d+)\//); if (m && m[1] === ESTATE) ROOM = m[2]; } catch (e) { }
   // 試す時だけ: 手元（localhost）では ?proxy= で中継を差し替えられる
   const proxy = (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) && P.get('proxy')) || PROXY;
+  // デザインの印（ボタンの押されやすさを比べる時に、ブラウザごとに振り分けて覚えておく）。今は A だけ。
+  // 比べる時は DESIGNS に 'B' を足し、見た目の違いは body の data-design で切り替える
+  const DESIGNS = ['A'];
+  let V = DESIGNS[0];
+  try { V = localStorage.getItem('kataroku_ai_design') || ''; if (DESIGNS.indexOf(V) < 0) { V = DESIGNS[Math.floor(Math.random() * DESIGNS.length)]; localStorage.setItem('kataroku_ai_design', V); } }
+  catch (e) { V = DESIGNS[0]; }
+  document.body.dataset.design = V;
 
   const $ = id => document.getElementById(id);
   const out = $('out'), q = $('q'), go = $('go');
@@ -129,11 +136,25 @@
 
   const hist = [];
   let busy = false;
+  // 直前の質問と、その答えの種類（AI／決まった答えの種類／上限など）。ボタンが押された時の記録に添える
+  let lastQ = '', lastKind = '';
+  // LINE・電話のボタンが押されたら、記録だけ中継へ送る（AIは呼ばない・ページの移動は止めない）。
+  // ⚠ 直前の質問は q ではなく lq に入れる（q だと、中継を出し直した直後の古い版が質問と取り違えてAIを呼ぶ）
+  document.addEventListener('click', ev => {
+    const a = ev.target && ev.target.closest && ev.target.closest('a.line, a.tel, .credit a');
+    if (!a) return;
+    const where = a.closest('.credit') ? '注記' : a.closest('.msg') ? '上限の案内' : '答え:' + (lastKind || '?');
+    const body = JSON.stringify({ ev: 'click', e: ESTATE, r: ROOM, k: a.classList.contains('tel') ? 'tel' : 'line', l: (a.textContent || '').trim().slice(0, 40), w: where, lq: lastQ, v: V });
+    try {
+      if (!(navigator.sendBeacon && navigator.sendBeacon(proxy, new Blob([body], { type: 'text/plain;charset=utf-8' }))))
+        fetch(proxy, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body, keepalive: true }).catch(() => {});
+    } catch (e) { /* 記録できなくても移動は止めない */ }
+  }, true);
   $('f').addEventListener('submit', async ev => {
     ev.preventDefault();
     const text = q.value.trim();
     if (!text || busy) return;
-    if (usedToday() >= MAX_PER_DAY) { say('<p class="msg">試験運用中のため' + MAX_PER_DAY + '問までです。続きは' + lineA('LINEでお気軽にご相談') + '<span class="nw">ください。</span></p>'); return; }
+    if (usedToday() >= MAX_PER_DAY) { lastQ = text; lastKind = '1日5問'; say('<p class="msg">試験運用中のため' + MAX_PER_DAY + '問までです。続きは' + lineA('LINEでお気軽にご相談') + '<span class="nw">ください。</span></p>'); return; }
     busy = true; go.disabled = true;
     say('<p class="msg wait">回答を作っています</p>');
     let res;
@@ -141,11 +162,13 @@
       const ac = new AbortController();
       const timer = setTimeout(() => ac.abort(), 40000);
       // Content-Type を text/plain にして、事前確認（CORS のプリフライト）が起きない形で送る
-      const r = await fetch(proxy, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ e: ESTATE, r: ROOM, q: text, h: hist }), signal: ac.signal });
+      const r = await fetch(proxy, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ e: ESTATE, r: ROOM, q: text, h: hist, v: V }), signal: ac.signal });
       clearTimeout(timer);
       res = await r.json();
     } catch (e) { res = { error: 'network' }; }
     busy = false; go.disabled = false;
+    lastQ = text;
+    lastKind = res && res.answer ? (res.canned || 'AI') : res && res.error === 'daily_cap' ? '全体の上限' : 'エラー';
     if (res && res.answer) {
       // 決まった答え（悪口・「本当に空いてる？」など。AIを呼んでいない）は、続けて聞く時の材料に入れず、1日の回数にも数えない
       if (!res.canned) {
