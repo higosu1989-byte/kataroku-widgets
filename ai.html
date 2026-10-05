@@ -43,6 +43,7 @@
   #out.idle { display: flex; align-items: center; overflow: hidden; }
   #out.more { -webkit-mask-image: linear-gradient(#000 calc(100% - 16px), transparent); mask-image: linear-gradient(#000 calc(100% - 16px), transparent); }
   .help, .msg { margin: 0; font-size: 12px; line-height: 18px; color: var(--sub); }
+  .help .pi { font-size: 11px; color: #999; }   /* 質問する前だけ出る注意（答えが出ると入れ替わる） */
   .a { margin: 0; font-size: 13px; line-height: 19px; white-space: pre-wrap; word-break: break-word; }
   .a a { color: var(--red); text-decoration: underline; text-underline-offset: 2px; }
   /* 回答の中の「LINEでお問合せ下さい」は、LINEの緑のボタン風のリンクにして目立たせる（行の高さは変えない） */
@@ -60,7 +61,7 @@
   <input type="text" id="q" placeholder="例：いちばん安い1LDKは？" enterkeyhint="send" autocomplete="off" maxlength="200" aria-label="この物件についてAIに質問">
   <button id="go" class="send" type="submit" aria-label="送る"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4 20-7z"/></svg></button>
 </form>
-<div id="out" class="idle" aria-live="polite"><p class="help">この物件の空室・賃料・設備はもちろん、<br>近くの物件探しもAIがお手伝いします。</p></div>
+<div id="out" class="idle" aria-live="polite"><p class="help">この物件の空室・賃料・設備はもちろん、<br>近くの物件探しもAIがお手伝いします。<br><span class="pi">個人情報のご入力はお控え下さい。</span></p></div>
 <p class="credit">AIの回答は最終更新時点の目安です。正確な条件は <a href="https://customer.cloud.canary-app.com/kataroku-honten/create-customer" target="_blank" rel="noopener">LINEで相談 ›</a></p>
 
 <script>
