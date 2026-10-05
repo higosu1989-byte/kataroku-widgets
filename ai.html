@@ -48,6 +48,7 @@
   /* 回答の中の「LINEでお問合せ下さい」は、LINEの緑のボタン風のリンクにして目立たせる（行の高さは変えない） */
   .nw { white-space: nowrap; }   /* 「くださ／い。」のように途中で改行させない */
   .a a.line, .msg a.line { display: inline-block; padding: 0 9px; margin: 0 2px; border-radius: 999px; background: #06c755; color: #fff; font-weight: 700; text-decoration: none; white-space: nowrap; }
+  .a a.tel { display: inline-block; padding: 0 9px; margin: 0 2px; border-radius: 999px; border: 1px solid var(--red); line-height: 17px; color: var(--red); font-weight: 700; text-decoration: none; white-space: nowrap; }
   .wait::after { content: ''; display: inline-block; width: 1.5em; text-align: left; animation: dots 1.2s steps(4, end) infinite; }
   @keyframes dots { 0% { content: ''; } 25% { content: '.'; } 50% { content: '..'; } 75% { content: '...'; } }
   .credit { margin: 4px 0 0; font-size: 10px; line-height: 15px; height: 15px; color: #999; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -97,6 +98,9 @@
   const LINE = 'https://customer.cloud.canary-app.com/kataroku-honten/create-customer';
   const lineA = t => '<a class="line" href="' + LINE + '" target="_blank" rel="noopener">' + t + '</a>';
   const linkLine = html => html.replace(/LINE[^。、！!？?\n<⟦]{0,14}/g, m => lineA(m));
+  // 電話の入口（サイトの「電話する」と同じ番号）
+  const TEL = '03-6811-1402';
+  const telA = () => '<a class="tel" href="tel:' + TEL.replace(/-/g, '') + '">電話 ' + TEL + '</a>';
   const linkRooms = (html, rooms) => html.replace(/([A-Za-z0-9-]{1,12})号室/g, (m, no) =>
     rooms && Object.prototype.hasOwnProperty.call(rooms, no) && /^\d+$/.test(rooms[no])
       ? '<a href="https://kataroku.jp/building/' + ESTATE + '/' + rooms[no] + '/" target="_top">' + no + '号室</a>' : m);
@@ -151,7 +155,9 @@
       q.value = ''; q.placeholder = text;
       let html = linkAll(res.answer, res.rooms, res.links);
       // 決まった答え（悪口・記号だけ・他社キャンペーン・本当に空いてる？）には、いつもLINEの入口を付ける（文にLINEが無い時は後ろに足す）
-      if (res.canned && html.indexOf('class="line"') < 0) html += lineA('LINEでのお問い合わせ') + 'お待ちしております。';
+      // 非公開・退去前の物件の質問は、LINE と電話の入口を次の行に並べる
+      if (res.canned === 'hidden') html += '\n' + lineA('LINEで相談') + telA();
+      else if (res.canned && html.indexOf('class="line"') < 0) html += lineA('LINEでのお問い合わせ') + 'お待ちしております。';
       say('<p class="a">' + html + '</p>');
     } else {
       // うまくいかなかった時は質問を入力欄に残す（そのまま送り直せる）
