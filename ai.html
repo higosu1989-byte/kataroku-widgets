@@ -97,7 +97,9 @@
   // 「LINEでお問合せ下さい」「LINEでご確認ください」などを、LINEの相談の入口（下の「LINEで相談」と同じ）へのリンクにする
   const LINE = 'https://customer.cloud.canary-app.com/kataroku-honten/create-customer';
   const lineA = t => '<a class="line" href="' + LINE + '" target="_blank" rel="noopener">' + t + '</a>';
-  const linkLine = html => html.replace(/LINE[^。、！!？?\n<⟦]{0,14}/g, m => lineA(m));
+  // 丸ごとボタンにするのは「LINEでお問合せ下さい」「LINEでご確認ください」などの決まった言い方だけ。
+  // それ以外（「LINEでご希望の間取りや賃料をお知らせください」）は「LINEで」までにして、言葉の途中で切らない
+  const linkLine = html => html.replace(/LINE(での|で|にて|から)?(お問い?合わ?せ|ご相談|相談|ご確認|確認)?(下さい|ください)?/g, m => lineA(m));
   // 電話の入口（サイトの「電話する」と同じ番号）
   const TEL = '03-6811-1402';
   const telA = () => '<a class="tel" href="tel:' + TEL.replace(/-/g, '') + '">電話 ' + TEL + '</a>';
