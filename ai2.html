@@ -30,13 +30,19 @@
   /* 質問する前: あいさつの吹き出しと質問の例のボタンをひとかたまりにして、上下の真ん中に置く
      （回答を出すための高さの残りが、上と下に半分ずつの余白になる。auto の余白はあふれると0になり、頭から読める） */
   #thread { flex: 1 1 auto; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; padding-top: 4px; display: flex; flex-direction: column; }
-  #thread.idle > :first-child { margin-top: auto; }
+  /* 余白は3つの auto（あいさつの上・あいさつとボタンの間・ボタンの下）で同じだけ分ける。
+     ボタンの上（.chips の padding-top 6px）と下（入力欄の margin-top 6px）に同じ幅を足して、ボタンの上下の隙間をそろえる（和田さん 2026-11-18） */
+  #thread.idle { padding-top: 6px; }
+  #thread.idle > * { margin-top: auto; }
   #thread.idle > :last-child { margin-bottom: auto; }
   #thread.idle .help { font-size: 14px; line-height: 22px; }
-  .chips { padding-top: 8px; display: flex; flex-wrap: wrap; gap: 6px; }
-  .chips button { height: 28px; padding: 0 10px; border: 1px solid var(--line); border-radius: 3px; background: #fff; color: #333; font: inherit; font-size: 13px; line-height: 26px; cursor: pointer; white-space: nowrap; }
+  .chips { padding-top: 6px; display: flex; flex-wrap: wrap; gap: 6px; }
+  /* ⚠ パソコンの部屋のページは3つで480pxに収める（「2年住んだら概算いくら？」が長い。かなが全角幅の字で残り約10px） */
+  .chips button { height: 28px; padding: 0 9px; border: 1px solid var(--line); border-radius: 3px; background: #fff; color: #333; font: inherit; font-size: 13px; line-height: 26px; cursor: pointer; white-space: nowrap; }
   .chips button:hover, .chips button:focus-visible { border-color: var(--red); color: var(--red); outline: none; }
-  @media (max-width: 479px) { .chips button:nth-child(n+3) { display: none; } }   /* スマホは2つ（1行に収める） */
+  /* スマホは2つ（1行に収める）。建物のページは「いちばん安い部屋は？」「掲載中の間取り一覧」、
+     部屋のページは「いちばん安い部屋は？」「2年住んだら概算いくら？」（和田さん 2026-11-18） */
+  @media (max-width: 479px) { .chips:not(.room) .c2, .chips.room .c3 { display: none; } }
   #thread.more { -webkit-mask-image: linear-gradient(#000 calc(100% - 18px), transparent); mask-image: linear-gradient(#000 calc(100% - 18px), transparent); }
   .me { display: flex; justify-content: flex-end; margin: 0 0 6px; }
   .me span { max-width: 80%; padding: 3px 10px; border-radius: 3px; background: #ececee; font-size: 13px; line-height: 20px; color: #333; word-break: break-word; }
@@ -51,7 +57,7 @@
   .bubble::before { content: ''; position: absolute; left: -6px; top: 10px; width: 10px; height: 10px; background: #fff;
     border-left: 1px solid var(--line); border-bottom: 1px solid var(--line); transform: rotate(45deg); }
   .help, .msg { margin: 0; font-size: 13px; line-height: 21px; color: var(--sub); }
-  .help .pi { font-size: 11px; color: #9a9ea5; }
+  .help .pi { font-size: 11px; color: #9a9ea5; white-space: nowrap; }   /* 「※個人情報のご／入力は…」と途中で折らない */
   .think { font-size: 14px; line-height: 24px; background: linear-gradient(90deg, #9a9ea5 0%, #9a9ea5 35%, #e2543a 50%, #9a9ea5 65%, #9a9ea5 100%);
     background-size: 220% 100%; -webkit-background-clip: text; background-clip: text; color: transparent; animation: sh 1.6s linear infinite; }
   @keyframes sh { from { background-position: 100% 0; } to { background-position: -20% 0; } }
@@ -85,7 +91,7 @@
     <symbol id="spark" viewBox="0 0 24 24"><path d="M10 2.5c.5 3.9 2.6 6 6.5 6.5-3.9.5-6 2.6-6.5 6.5-.5-3.9-2.6-6-6.5-6.5 3.9-.5 6-2.6 6.5-6.5z"/><path class="small" d="M18.5 13.5c.3 1.9 1.3 2.9 3.2 3.2-1.9.3-2.9 1.3-3.2 3.2-.3-1.9-1.3-2.9-3.2-3.2 1.9-.3 2.9-1.3 3.2-3.2z"/></symbol>
   </defs>
 </svg>
-<div id="thread" class="idle" aria-live="polite"><div class="bot"><span class="sp"><svg fill="url(#spg)" aria-hidden="true"><use href="#spark"/></svg></span><div class="bubble"><p class="help">この物件の空室・賃料・設備はもちろん、近くの物件探しもお手伝いします。<span class="pi">※個人情報のご入力はお控え下さい。</span></p></div></div><div class="chips"><button type="button" data-q="いちばん安い部屋は？">いちばん安い部屋は？</button><button type="button" data-q="初期費用はいくら？">初期費用はいくら？</button><button type="button" data-q="掲載中の間取りをまとめて">掲載中の間取り一覧</button></div></div>
+<div id="thread" class="idle" aria-live="polite"><div class="bot"><span class="sp"><svg fill="url(#spg)" aria-hidden="true"><use href="#spark"/></svg></span><div class="bubble"><p class="help">この物件の空室・賃料・設備はもちろん、近くの物件探しもお手伝いします。<span class="pi">※個人情報のご入力はお控え下さい。</span></p></div></div><div class="chips"><button type="button" class="c1" data-q="いちばん安い部屋は？">いちばん安い部屋は？</button><button type="button" class="c2" data-q="初期費用はいくら？">初期費用はいくら？</button><button type="button" class="c3" data-q="掲載中の間取りをまとめて">掲載中の間取り一覧</button></div></div>
 <form id="f">
   <input type="text" id="q" placeholder="例：南向きのお部屋を教えて" enterkeyhint="send" autocomplete="off" maxlength="200" aria-label="この物件についてAIに質問">
   <button id="go" class="send" type="submit" aria-label="送る"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5"/><path d="M5 12l7-7 7 7"/></svg></button>
@@ -114,6 +120,12 @@
   // 部屋は ?r= で渡す（a.js がページのURLから読む。iPhone は埋め込みにページのURLを渡さないので、埋め込み元のURLだけに頼らない）
   let ROOM = (P.get('r') || '').replace(/\D/g, '');
   if (!ROOM) { try { const m = document.referrer.match(/\/building\/(\d+)\/(\d+)\//); if (m && m[1] === ESTATE) ROOM = m[2]; } catch (e) { } }
+  // 部屋のページでは2つ目の例を「2年住んだら概算いくら？」にする（建物のページの「初期費用はいくら？」は号室を聞き返すことになるため）。
+  //   答えは中継がページの初期費用概算と表の数字から計算して返す（AIを呼ばない）
+  if (ROOM) {
+    const chips = document.querySelector('.chips'), c2 = chips && chips.querySelector('.c2');
+    if (c2) { c2.textContent = c2.dataset.q = '2年住んだら概算いくら？'; chips.classList.add('room'); }
+  }
   const proxy = (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) && P.get('proxy')) || PROXY;
   // デザインの印（ボタンが押された記録に添える）。会話型は B
   const V = 'B';
@@ -234,8 +246,9 @@
     lastQ = text;
     lastKind = res && res.answer ? (res.canned || 'AI') : res && res.error === 'daily_cap' ? '全体の上限' : 'エラー';
     if (res && res.answer) {
-      if (!res.canned) {
-        addUse();
+      if (!res.canned) addUse();
+      // 2年の概算（中継が計算した答え・回数に数えない）も、続けて聞く質問のために直前のやりとりに残す
+      if (!res.canned || res.canned === 'twoyear') {
         hist.push({ role: 'user', content: text }, { role: 'assistant', content: res.answer });
         while (hist.length > 4) hist.shift();
       }
