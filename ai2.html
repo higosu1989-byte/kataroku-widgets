@@ -27,9 +27,13 @@
   body { margin: 0; padding: 0; display: flex; flex-direction: column; overflow: hidden;
     font: 14px/1.5 -apple-system, "Hiragino Sans", "Yu Gothic UI", Meiryo, sans-serif; color: var(--ink); }
   @media (max-width: 479px) { body { padding: 0 12px; } }
-  /* 質問する前: あいさつの吹き出しを上に、質問の例のボタンを入力欄のすぐ上に置く（間の余白で埋まる。margin-top:auto はあふれると0になる） */
+  /* 質問する前: あいさつの吹き出しと質問の例のボタンをひとかたまりにして、上下の真ん中に置く
+     （回答を出すための高さの残りが、上と下に半分ずつの余白になる。auto の余白はあふれると0になり、頭から読める） */
   #thread { flex: 1 1 auto; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; padding-top: 4px; display: flex; flex-direction: column; }
-  .chips { margin-top: auto; padding-top: 6px; display: flex; flex-wrap: wrap; gap: 6px; }
+  #thread.idle > :first-child { margin-top: auto; }
+  #thread.idle > :last-child { margin-bottom: auto; }
+  #thread.idle .help { font-size: 14px; line-height: 22px; }
+  .chips { padding-top: 8px; display: flex; flex-wrap: wrap; gap: 6px; }
   .chips button { height: 28px; padding: 0 10px; border: 1px solid var(--line); border-radius: 3px; background: #fff; color: #333; font: inherit; font-size: 13px; line-height: 26px; cursor: pointer; white-space: nowrap; }
   .chips button:hover, .chips button:focus-visible { border-color: var(--red); color: var(--red); outline: none; }
   @media (max-width: 479px) { .chips button:nth-child(n+3) { display: none; } }   /* スマホは2つ（1行に収める） */
@@ -81,7 +85,7 @@
     <symbol id="spark" viewBox="0 0 24 24"><path d="M10 2.5c.5 3.9 2.6 6 6.5 6.5-3.9.5-6 2.6-6.5 6.5-.5-3.9-2.6-6-6.5-6.5 3.9-.5 6-2.6 6.5-6.5z"/><path class="small" d="M18.5 13.5c.3 1.9 1.3 2.9 3.2 3.2-1.9.3-2.9 1.3-3.2 3.2-.3-1.9-1.3-2.9-3.2-3.2 1.9-.3 2.9-1.3 3.2-3.2z"/></symbol>
   </defs>
 </svg>
-<div id="thread" aria-live="polite"><div class="bot"><span class="sp"><svg fill="url(#spg)" aria-hidden="true"><use href="#spark"/></svg></span><div class="bubble"><p class="help">この物件の空室・賃料・設備はもちろん、近くの物件探しもお手伝いします。<span class="pi">※個人情報のご入力はお控え下さい。</span></p></div></div><div class="chips"><button type="button" data-q="いちばん安い部屋は？">いちばん安い部屋は？</button><button type="button" data-q="ペットは飼える？">ペットは飼える？</button><button type="button" data-q="駐車場はある？">駐車場はある？</button></div></div>
+<div id="thread" class="idle" aria-live="polite"><div class="bot"><span class="sp"><svg fill="url(#spg)" aria-hidden="true"><use href="#spark"/></svg></span><div class="bubble"><p class="help">この物件の空室・賃料・設備はもちろん、近くの物件探しもお手伝いします。<span class="pi">※個人情報のご入力はお控え下さい。</span></p></div></div><div class="chips"><button type="button" data-q="いちばん安い部屋は？">いちばん安い部屋は？</button><button type="button" data-q="ペットは飼える？">ペットは飼える？</button><button type="button" data-q="駐車場はある？">駐車場はある？</button></div></div>
 <form id="f">
   <input type="text" id="q" placeholder="例：いちばん安い1LDKは？" enterkeyhint="send" autocomplete="off" maxlength="200" aria-label="この物件についてAIに質問">
   <button id="go" class="send" type="submit" aria-label="送る"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5"/><path d="M5 12l7-7 7 7"/></svg></button>
@@ -145,6 +149,7 @@
   thread.addEventListener('scroll', fade, { passive: true });
   // 会話の欄を書き換える（question があれば右に質問、左に✨と吹き出し）
   const show = (question, inner, busy) => {
+    thread.classList.remove('idle');
     thread.innerHTML = (question ? '<div class="me"><span>' + esc(question) + '</span></div>' : '')
       + '<div class="bot' + (busy ? ' busy' : '') + '">' + SPARK + '<div class="bubble">' + inner + '</div></div>';
     thread.scrollTop = 0; fade();
