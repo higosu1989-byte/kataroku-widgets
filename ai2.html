@@ -27,7 +27,9 @@
   body { margin: 0; padding: 0; display: flex; flex-direction: column; overflow: hidden;
     font: 14px/1.5 -apple-system, "Hiragino Sans", "Yu Gothic UI", Meiryo, sans-serif; color: var(--ink); }
   @media (max-width: 479px) { body { padding: 0 12px; } }
-  #thread { flex: 1 1 auto; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; padding-top: 4px; }
+  /* 会話はチャットのように入力欄の上に寄せる（短い時は下に寄り、長い時は頭から読める。margin-top:auto はあふれると0になる） */
+  #thread { flex: 1 1 auto; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; padding-top: 4px; display: flex; flex-direction: column; }
+  #thread > :first-child { margin-top: auto; }
   #thread.more { -webkit-mask-image: linear-gradient(#000 calc(100% - 18px), transparent); mask-image: linear-gradient(#000 calc(100% - 18px), transparent); }
   .me { display: flex; justify-content: flex-end; margin: 0 0 6px; }
   .me span { max-width: 80%; padding: 3px 10px; border-radius: 3px; background: #ececee; font-size: 13px; line-height: 20px; color: #333; word-break: break-word; }
