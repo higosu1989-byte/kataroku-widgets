@@ -111,8 +111,9 @@
 
   const P = new URLSearchParams(location.search);
   const ESTATE = (P.get('e') || '').replace(/\D/g, '');
-  let ROOM = '';
-  try { const m = document.referrer.match(/\/building\/(\d+)\/(\d+)\//); if (m && m[1] === ESTATE) ROOM = m[2]; } catch (e) { }
+  // 部屋は ?r= で渡す（a.js がページのURLから読む。iPhone は埋め込みにページのURLを渡さないので、埋め込み元のURLだけに頼らない）
+  let ROOM = (P.get('r') || '').replace(/\D/g, '');
+  if (!ROOM) { try { const m = document.referrer.match(/\/building\/(\d+)\/(\d+)\//); if (m && m[1] === ESTATE) ROOM = m[2]; } catch (e) { } }
   const proxy = (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) && P.get('proxy')) || PROXY;
   // デザインの印（ボタンが押された記録に添える）。会話型は B
   const V = 'B';
