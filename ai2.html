@@ -36,9 +36,13 @@
   #thread.idle > * { margin-top: auto; }
   #thread.idle > :last-child { margin-bottom: auto; }
   #thread.idle .help { font-size: 14px; line-height: 22px; }
+  /* 例のボタンと入力欄は吹き出しの左端（✨の列28px＋間8px＝36px）に揃え、✨は左にはみ出す形にする（2026-11-21）。
+     注記（.credit）は左端のまま（スマホで揃えると「LINEで相談 ›」が切れる） */
+  .chips, form { margin-left: 36px; }
   .chips { padding-top: 6px; display: flex; flex-wrap: wrap; gap: 6px; }
-  /* ⚠ パソコンの部屋のページは3つで480pxに収める（「2年住んだら概算いくら？」が長い。かなが全角幅の字で残り約10px） */
-  .chips button { height: 28px; padding: 0 9px; border: 1px solid var(--line); border-radius: 3px; background: #fff; color: #333; font: inherit; font-size: 13px; line-height: 26px; cursor: pointer; white-space: nowrap; }
+  /* ⚠ パソコンの部屋のページは3つで444px（480−36）に収める（「2年住んだら概算いくら？」が長い）。
+     字を12px・左右8pxにして、かなが全角幅の字で残り約11px（スマホの部屋のページの2つは残り約14px）。13pxのままだと3つ目が次の行に落ちる */
+  .chips button { height: 28px; padding: 0 8px; border: 1px solid var(--line); border-radius: 3px; background: #fff; color: #333; font: inherit; font-size: 12px; line-height: 26px; cursor: pointer; white-space: nowrap; }
   .chips button:hover, .chips button:focus-visible { border-color: var(--red); color: var(--red); outline: none; }
   /* スマホは2つ（1行に収める）。建物のページは「いちばん安い部屋は？」「掲載中の間取り一覧」、
      部屋のページは「いちばん安い部屋は？」「2年住んだら概算いくら？」（和田さん 2026-11-18） */
